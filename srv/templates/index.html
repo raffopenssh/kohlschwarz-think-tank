@@ -13,22 +13,22 @@
             <p class="tagline">Apps built with Shelley on <a href="https://exe.dev">exe.dev</a></p>
         </header>
 
-        <div class="apps">
+        <div class="grid">
             {{range .Apps}}
-            <article class="app">
-                <a href="{{.Url}}" class="app-thumb" target="_blank" rel="noopener">
-                    {{if .Thumbnail}}
-                    <img src="{{.Thumbnail}}" alt="{{.Title}}" loading="lazy">
-                    {{end}}
-                </a>
-                <div class="app-info">
-                    <h2><a href="{{.Url}}" target="_blank" rel="noopener">{{.Title}}</a></h2>
-                    <p class="app-desc">{{.Description}}</p>
+            <a href="{{.Url}}" class="card" target="_blank" rel="noopener">
+                {{if .Thumbnail}}
+                <div class="thumb" style="background-image: url('{{.Thumbnail}}')"></div>
+                {{end}}
+                <div class="content">
+                    <h2>{{.Title}}</h2>
+                    <p>{{.Description}}</p>
                     {{if .Prompt}}
-                    <blockquote class="prompt">{{.Prompt}}</blockquote>
+                    <button type="button" class="prompt-btn" onclick="event.preventDefault(); event.stopPropagation(); showPrompt('{{.Title}}', `{{.Prompt}}`)">
+                        <span class="prompt-icon">✨</span> shelley prompt
+                    </button>
                     {{end}}
                 </div>
-            </article>
+            </a>
             {{end}}
         </div>
 
@@ -36,5 +36,33 @@
             <p>~1-2 hours each · Methods & data included · <a href="/admin">Edit</a></p>
         </footer>
     </main>
+
+    <div id="modal" class="modal" onclick="if(event.target===this)closeModal()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title"></h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p id="modal-prompt"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showPrompt(title, prompt) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-prompt').textContent = prompt;
+            document.getElementById('modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+    </script>
 </body>
 </html>
