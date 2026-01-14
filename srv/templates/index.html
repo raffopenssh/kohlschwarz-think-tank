@@ -23,9 +23,10 @@
                     <h2>{{.Title}}</h2>
                     <p>{{.Description}}</p>
                     {{if .Prompt}}
-                    <button type="button" class="prompt-btn" onclick="event.preventDefault(); event.stopPropagation(); showPrompt('{{.Title}}', `{{.Prompt}}`)">
-                        <span class="prompt-icon">✨</span> shelley prompt
-                    </button>
+                    <div class="prompt-wrap">
+                        <span class="prompt-btn"><span class="prompt-icon">✨</span> shelley prompt</span>
+                        <div class="prompt-tooltip">{{.Prompt}}</div>
+                    </div>
                     {{end}}
                 </div>
             </a>
@@ -36,33 +37,5 @@
             <p>~1-2 hours each · Methods & data included · <a href="/admin">Edit</a></p>
         </footer>
     </main>
-
-    <div id="modal" class="modal" onclick="if(event.target===this)closeModal()">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title"></h3>
-                <button class="modal-close" onclick="closeModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <p id="modal-prompt"></p>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function showPrompt(title, prompt) {
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-prompt').textContent = prompt;
-            document.getElementById('modal').classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-        function closeModal() {
-            document.getElementById('modal').classList.remove('active');
-            document.body.style.overflow = '';
-        }
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
-        });
-    </script>
 </body>
 </html>
