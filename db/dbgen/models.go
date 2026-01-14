@@ -18,6 +18,7 @@ type App struct {
 	SortOrder      *int64    `json:"sort_order"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
+	Prompt         *string   `json:"prompt"`
 }
 
 type Migration struct {

@@ -113,7 +113,6 @@ func (s *Server) HandleAdminSave(w http.ResponseWriter, r *http.Request) {
 	url := r.FormValue("url")
 	title := r.FormValue("title")
 	description := r.FormValue("description")
-	shelleyCmd := r.FormValue("shelley_command")
 	thumbnail := r.FormValue("thumbnail")
 	sortOrderStr := r.FormValue("sort_order")
 	sortOrder, _ := strconv.ParseInt(sortOrderStr, 10, 64)
@@ -121,27 +120,29 @@ func (s *Server) HandleAdminSave(w http.ResponseWriter, r *http.Request) {
 	q := dbgen.New(s.DB)
 	ctx := r.Context()
 
+	prompt := r.FormValue("prompt")
+
 	if id > 0 {
 		err := q.UpdateApp(ctx, dbgen.UpdateAppParams{
-			ID:             id,
-			Url:            url,
-			Title:          title,
-			Description:    description,
-			ShelleyCommand: &shelleyCmd,
-			Thumbnail:      &thumbnail,
-			SortOrder:      &sortOrder,
+			ID:          id,
+			Url:         url,
+			Title:       title,
+			Description: description,
+			Thumbnail:   &thumbnail,
+			SortOrder:   &sortOrder,
+			Prompt:      &prompt,
 		})
 		if err != nil {
 			slog.Warn("update app", "error", err)
 		}
 	} else {
 		_, err := q.CreateApp(ctx, dbgen.CreateAppParams{
-			Url:            url,
-			Title:          title,
-			Description:    description,
-			ShelleyCommand: &shelleyCmd,
-			Thumbnail:      &thumbnail,
-			SortOrder:      &sortOrder,
+			Url:         url,
+			Title:       title,
+			Description: description,
+			Thumbnail:   &thumbnail,
+			SortOrder:   &sortOrder,
+			Prompt:      &prompt,
 		})
 		if err != nil {
 			slog.Warn("create app", "error", err)
@@ -210,76 +211,76 @@ func (s *Server) seedApps() error {
 
 	seedData := []dbgen.CreateAppParams{
 		{
-			Url:            "https://holzeinschlag-at.exe.xyz/",
-			Title:          "Holzeinschlag Österreich",
-			Description:    "Forest loss & carbon emissions by municipality. Satellite-derived harvest data 2001-2024 with ETS carbon pricing.",
-			ShelleyCommand: ptr("shelley holzeinschlag-at"),
-			Thumbnail:      ptr("/static/thumbs/holzeinschlag.jpg"),
-			SortOrder:      ptr(int64(1)),
+			Url:         "https://holzeinschlag-at.exe.xyz/",
+			Title:       "Holzeinschlag Österreich",
+			Description: "Forest loss & carbon emissions by municipality. Satellite-derived harvest data 2001-2024 with ETS carbon pricing.",
+			Thumbnail:   ptr("/static/thumbs/holzeinschlag.jpg"),
+			SortOrder:   ptr(int64(1)),
+			Prompt:      ptr("Map Austria's forest harvest by municipality using Hansen satellite data. Calculate timber volume from tree cover loss, add carbon emissions and ETS liability at current prices. Let users select years and combine municipalities."),
 		},
 		{
-			Url:            "https://groundwater-at.exe.xyz/",
-			Title:          "Drought Risk Map",
-			Description:    "Groundwater levels meet hydropower. Municipality drought risk from 2,118 stations and 156 power plants.",
-			ShelleyCommand: ptr("shelley groundwater-at"),
-			Thumbnail:      ptr("/static/thumbs/groundwater.jpg"),
-			SortOrder:      ptr(int64(2)),
+			Url:         "https://groundwater-at.exe.xyz/",
+			Title:       "Drought Risk Map",
+			Description: "Groundwater levels meet hydropower. Municipality drought risk from 2,118 stations and 156 power plants.",
+			Thumbnail:   ptr("/static/thumbs/groundwater.jpg"),
+			SortOrder:   ptr(int64(2)),
+			Prompt:      ptr("Build a drought risk map for Austria combining groundwater monitoring stations with hydropower plant locations. Show which municipalities face water stress based on declining groundwater trends and power generation dependency."),
 		},
 		{
-			Url:            "https://msf-prep.exe.xyz/",
-			Title:          "MSF Medical Training",
-			Description:    "Interactive exam trainer based on Médecins Sans Frontières clinical guidelines. Practice protocols before deployment.",
-			ShelleyCommand: ptr("shelley msf-prep"),
-			Thumbnail:      ptr("/static/thumbs/msf-prep.jpg"),
-			SortOrder:      ptr(int64(3)),
+			Url:         "https://msf-prep.exe.xyz/",
+			Title:       "MSF Medical Training",
+			Description: "Interactive exam trainer based on Médecins Sans Frontières clinical guidelines. Practice protocols before deployment.",
+			Thumbnail:   ptr("/static/thumbs/msf-prep.jpg"),
+			SortOrder:   ptr(int64(3)),
+			Prompt:      ptr("Create an interactive exam trainer for MSF medical guidelines. Generate questions from the clinical protocols, track progress, show explanations with references back to the official documentation."),
 		},
 		{
-			Url:            "https://landcruiser-spares.exe.xyz:8001/",
-			Title:          "Land Cruiser 100 Blueprint",
-			Description:    "3D wireframe assembly viewer for Toyota UZJ100/FZJ100. Exploded views from service manuals for parts identification.",
-			ShelleyCommand: ptr("shelley landcruiser-spares"),
-			Thumbnail:      ptr("/static/thumbs/landcruiser.jpg"),
-			SortOrder:      ptr(int64(4)),
+			Url:         "https://landcruiser-spares.exe.xyz:8001/",
+			Title:       "Land Cruiser 100 Blueprint",
+			Description: "3D wireframe assembly viewer for Toyota UZJ100/FZJ100. Exploded views from service manuals for parts identification.",
+			Thumbnail:   ptr("/static/thumbs/landcruiser.jpg"),
+			SortOrder:   ptr(int64(4)),
+			Prompt:      ptr("Build a 3D wireframe viewer for the Toyota Land Cruiser 100 series. Extract part diagrams from service manuals, create exploded views by system (engine, transmission, suspension), let users identify and search for parts."),
 		},
 		{
-			Url:            "https://schools-at.exe.xyz/",
-			Title:          "Schulqualität Österreich",
-			Description:    "5,752 schools across 2,120 municipalities. Service quality ratings, class sizes, and all-day school coverage.",
-			ShelleyCommand: ptr("shelley schools-at"),
-			Thumbnail:      ptr("/static/thumbs/schools.jpg"),
-			SortOrder:      ptr(int64(5)),
+			Url:         "https://schools-at.exe.xyz/",
+			Title:       "Schulqualität Österreich",
+			Description: "5,752 schools across 2,120 municipalities. Service quality ratings, class sizes, and all-day school coverage.",
+			Thumbnail:   ptr("/static/thumbs/schools.jpg"),
+			SortOrder:   ptr(int64(5)),
+			Prompt:      ptr("Map all Austrian schools by municipality with quality indicators. Include student-teacher ratios, all-day school availability, and compare educational supply to school-age population. Help parents find schools near them."),
 		},
 		{
-			Url:            "https://maternity-ward-closure.exe.xyz/",
-			Title:          "Geburtshilfe-Erreichbarkeit",
-			Description:    "Maternity ward accessibility via OSRM routing. Simulate closures to see drive time impacts on 90k women aged 15-44.",
-			ShelleyCommand: ptr("shelley maternity-ward-closure"),
-			Thumbnail:      ptr("/static/thumbs/maternity.jpg"),
-			SortOrder:      ptr(int64(6)),
+			Url:         "https://maternity-ward-closure.exe.xyz/",
+			Title:       "Geburtshilfe-Erreichbarkeit",
+			Description: "Maternity ward accessibility via OSRM routing. Simulate closures to see drive time impacts on 90k women aged 15-44.",
+			Thumbnail:   ptr("/static/thumbs/maternity.jpg"),
+			SortOrder:   ptr(int64(6)),
+			Prompt:      ptr("Model maternity ward accessibility in Austria using real driving times. Weight by female population 15-44, show which areas exceed 30/45 min drive times. Let users simulate ward closures and see the impact."),
 		},
 		{
-			Url:            "https://child-care-access-at.exe.xyz/",
-			Title:          "Kinderbetreuung Österreich",
-			Description:    "9,863 childcare facilities mapped. 55% average coverage rate, 848 municipalities without infant care.",
-			ShelleyCommand: ptr("shelley child-care-access-at"),
-			Thumbnail:      ptr("/static/thumbs/childcare.jpg"),
-			SortOrder:      ptr(int64(7)),
+			Url:         "https://child-care-access-at.exe.xyz/",
+			Title:       "Kinderbetreuung Österreich",
+			Description: "9,863 childcare facilities mapped. 55% average coverage rate, 848 municipalities without infant care.",
+			Thumbnail:   ptr("/static/thumbs/childcare.jpg"),
+			SortOrder:   ptr(int64(7)),
+			Prompt:      ptr("Visualize childcare availability across Austrian municipalities. Show coverage rates, identify gaps where no infant care exists, compare facility quality indicators. Download data for analysis."),
 		},
 		{
-			Url:            "https://austria-power.exe.xyz/",
-			Title:          "Wind Grid Capacity",
-			Description:    "1,578 turbines, 441 substations, 30 GW installed. Grid feed-in capacity analysis for wind expansion.",
-			ShelleyCommand: ptr("shelley austria-power"),
-			Thumbnail:      ptr("/static/thumbs/power.jpg"),
-			SortOrder:      ptr(int64(8)),
+			Url:         "https://austria-power.exe.xyz/",
+			Title:       "Wind Grid Capacity",
+			Description: "1,578 turbines, 441 substations, 30 GW installed. Grid feed-in capacity analysis for wind expansion.",
+			Thumbnail:   ptr("/static/thumbs/power.jpg"),
+			SortOrder:   ptr(int64(8)),
+			Prompt:      ptr("Map Austria's wind turbines and transformer stations. Use Austro Control obstacle data to get turbine heights. Analyze grid capacity for new wind installations by district, show where expansion is feasible."),
 		},
 		{
-			Url:            "https://farm-subsidies-austria.exe.xyz/",
-			Title:          "Agrarsubventionen Österreich",
-			Description:    "€3.6B in EU farm payments visualized by municipality. Compare actual vs expected allocations across 2,117 communes.",
-			ShelleyCommand: ptr("shelley farm-subsidies-austria"),
-			Thumbnail:      ptr("/static/thumbs/farm-subsidies.jpg"),
-			SortOrder:      ptr(int64(9)),
+			Url:         "https://farm-subsidies-austria.exe.xyz/",
+			Title:       "Agrarsubventionen Österreich",
+			Description: "€3.6B in EU farm payments visualized by municipality. Compare actual vs expected allocations across 2,117 communes.",
+			Thumbnail:   ptr("/static/thumbs/farm-subsidies.jpg"),
+			SortOrder:   ptr(int64(9)),
+			Prompt:      ptr("Show EU farm subsidy payments by Austrian municipality. Compare actual payments to what you'd expect based on agricultural area and regional factors. Help farmers understand what programs they might qualify for."),
 		},
 	}
 

@@ -29,13 +29,13 @@
             </div>
 
             <div class="form-group">
-                <label for="description">Description</label>
-                <textarea id="description" name="description" required>{{if .App}}{{.App.Description}}{{end}}</textarea>
+                <label for="description">Description (short)</label>
+                <textarea id="description" name="description" rows="2" required>{{if .App}}{{.App.Description}}{{end}}</textarea>
             </div>
 
             <div class="form-group">
-                <label for="shelley_command">Shelley Command</label>
-                <input type="text" id="shelley_command" name="shelley_command" value="{{if .App}}{{if .App.ShelleyCommand}}{{.App.ShelleyCommand}}{{end}}{{end}}">
+                <label for="prompt">Prompt (the key request to Shelley)</label>
+                <textarea id="prompt" name="prompt" rows="4">{{if .App}}{{if .App.Prompt}}{{.App.Prompt}}{{end}}{{end}}</textarea>
             </div>
 
             <div class="form-group">

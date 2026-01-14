@@ -10,9 +10,9 @@ import (
 )
 
 const createApp = `-- name: CreateApp :one
-INSERT INTO apps (url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-RETURNING id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at
+INSERT INTO apps (url, title, description, shelley_command, thumbnail, sort_order, prompt, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+RETURNING id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at, prompt
 `
 
 type CreateAppParams struct {
@@ -22,6 +22,7 @@ type CreateAppParams struct {
 	ShelleyCommand *string `json:"shelley_command"`
 	Thumbnail      *string `json:"thumbnail"`
 	SortOrder      *int64  `json:"sort_order"`
+	Prompt         *string `json:"prompt"`
 }
 
 func (q *Queries) CreateApp(ctx context.Context, arg CreateAppParams) (App, error) {
@@ -32,6 +33,7 @@ func (q *Queries) CreateApp(ctx context.Context, arg CreateAppParams) (App, erro
 		arg.ShelleyCommand,
 		arg.Thumbnail,
 		arg.SortOrder,
+		arg.Prompt,
 	)
 	var i App
 	err := row.Scan(
@@ -44,6 +46,7 @@ func (q *Queries) CreateApp(ctx context.Context, arg CreateAppParams) (App, erro
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Prompt,
 	)
 	return i, err
 }
@@ -58,7 +61,7 @@ func (q *Queries) DeleteApp(ctx context.Context, id int64) error {
 }
 
 const getApp = `-- name: GetApp :one
-SELECT id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at FROM apps WHERE id = ?
+SELECT id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at, prompt FROM apps WHERE id = ?
 `
 
 func (q *Queries) GetApp(ctx context.Context, id int64) (App, error) {
@@ -74,12 +77,13 @@ func (q *Queries) GetApp(ctx context.Context, id int64) (App, error) {
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Prompt,
 	)
 	return i, err
 }
 
 const listApps = `-- name: ListApps :many
-SELECT id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at FROM apps ORDER BY sort_order ASC, id ASC
+SELECT id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at, prompt FROM apps ORDER BY sort_order ASC, id ASC
 `
 
 func (q *Queries) ListApps(ctx context.Context) ([]App, error) {
@@ -101,6 +105,7 @@ func (q *Queries) ListApps(ctx context.Context) ([]App, error) {
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Prompt,
 		); err != nil {
 			return nil, err
 		}
@@ -123,6 +128,7 @@ UPDATE apps SET
     shelley_command = ?,
     thumbnail = ?,
     sort_order = ?,
+    prompt = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 `
@@ -134,6 +140,7 @@ type UpdateAppParams struct {
 	ShelleyCommand *string `json:"shelley_command"`
 	Thumbnail      *string `json:"thumbnail"`
 	SortOrder      *int64  `json:"sort_order"`
+	Prompt         *string `json:"prompt"`
 	ID             int64   `json:"id"`
 }
 
@@ -145,6 +152,7 @@ func (q *Queries) UpdateApp(ctx context.Context, arg UpdateAppParams) error {
 		arg.ShelleyCommand,
 		arg.Thumbnail,
 		arg.SortOrder,
+		arg.Prompt,
 		arg.ID,
 	)
 	return err
