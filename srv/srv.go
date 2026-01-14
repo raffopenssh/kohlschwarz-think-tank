@@ -297,9 +297,44 @@ func ptr[T any](v T) *T {
 	return &v
 }
 
+func (s *Server) HandleSitemap(w http.ResponseWriter, r *http.Request) {
+	q := dbgen.New(s.DB)
+	apps, _ := q.ListApps(r.Context())
+
+	w.Header().Set("Content-Type", "application/xml")
+	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://kohlschwarz.exe.xyz:8000/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+`))
+	for _, app := range apps {
+		fmt.Fprintf(w, `  <url>
+    <loc>%s</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+`, app.Url)
+	}
+	w.Write([]byte(`</urlset>`))
+}
+
+func (s *Server) HandleRobots(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte(`User-agent: *
+Allow: /
+
+Sitemap: https://kohlschwarz.exe.xyz:8000/sitemap.xml
+`))
+}
+
 func (s *Server) Serve(addr string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.HandleRoot)
+	mux.HandleFunc("GET /sitemap.xml", s.HandleSitemap)
+	mux.HandleFunc("GET /robots.txt", s.HandleRobots)
 	mux.HandleFunc("GET /admin", s.HandleAdmin)
 	mux.HandleFunc("GET /admin/edit/{id}", s.HandleAdminEdit)
 	mux.HandleFunc("GET /admin/new", s.HandleAdminEdit)
