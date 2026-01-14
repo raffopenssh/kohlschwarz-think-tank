@@ -14,6 +14,7 @@ type App struct {
 	Title          string    `json:"title"`
 	Description    string    `json:"description"`
 	ShelleyCommand *string   `json:"shelley_command"`
+	Thumbnail      *string   `json:"thumbnail"`
 	SortOrder      *int64    `json:"sort_order"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`

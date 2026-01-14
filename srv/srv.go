@@ -114,6 +114,7 @@ func (s *Server) HandleAdminSave(w http.ResponseWriter, r *http.Request) {
 	title := r.FormValue("title")
 	description := r.FormValue("description")
 	shelleyCmd := r.FormValue("shelley_command")
+	thumbnail := r.FormValue("thumbnail")
 	sortOrderStr := r.FormValue("sort_order")
 	sortOrder, _ := strconv.ParseInt(sortOrderStr, 10, 64)
 
@@ -127,6 +128,7 @@ func (s *Server) HandleAdminSave(w http.ResponseWriter, r *http.Request) {
 			Title:          title,
 			Description:    description,
 			ShelleyCommand: &shelleyCmd,
+			Thumbnail:      &thumbnail,
 			SortOrder:      &sortOrder,
 		})
 		if err != nil {
@@ -138,6 +140,7 @@ func (s *Server) HandleAdminSave(w http.ResponseWriter, r *http.Request) {
 			Title:          title,
 			Description:    description,
 			ShelleyCommand: &shelleyCmd,
+			Thumbnail:      &thumbnail,
 			SortOrder:      &sortOrder,
 		})
 		if err != nil {
@@ -208,65 +211,74 @@ func (s *Server) seedApps() error {
 	seedData := []dbgen.CreateAppParams{
 		{
 			Url:            "https://holzeinschlag-at.exe.xyz/",
-			Title:          "Forest Harvest Austria",
-			Description:    "National forest harvest data downscaled to municipality level based on satellite imagery analysis. Features carbon pricing estimates for the period 2000-2024. Supports multi-year selection and municipality aggregation. Includes methodology documentation and data export.",
+			Title:          "Holzeinschlag Österreich",
+			Description:    "Forest loss & carbon emissions by municipality. Satellite-derived harvest data 2001-2024 with ETS carbon pricing.",
 			ShelleyCommand: ptr("shelley holzeinschlag-at"),
+			Thumbnail:      ptr("/static/thumbs/holzeinschlag.jpg"),
 			SortOrder:      ptr(int64(1)),
 		},
 		{
 			Url:            "https://groundwater-at.exe.xyz/",
-			Title:          "Groundwater & Drought Risk",
-			Description:    "Combines national groundwater measurement data with hydropower production statistics to assess municipality-level drought risk. Integrates multiple data sources to provide actionable drought vulnerability indicators.",
+			Title:          "Drought Risk Map",
+			Description:    "Groundwater levels meet hydropower. Municipality drought risk from 2,118 stations and 156 power plants.",
 			ShelleyCommand: ptr("shelley groundwater-at"),
+			Thumbnail:      ptr("/static/thumbs/groundwater.jpg"),
 			SortOrder:      ptr(int64(2)),
 		},
 		{
 			Url:            "https://msf-prep.exe.xyz/",
-			Title:          "MSF Exam Trainer",
-			Description:    "Interactive exam preparation tool based on Médecins Sans Frontières guidelines. Provides structured learning paths and practice questions to help medical professionals prepare for MSF deployments.",
+			Title:          "MSF Medical Training",
+			Description:    "Interactive exam trainer based on Médecins Sans Frontières clinical guidelines. Practice protocols before deployment.",
 			ShelleyCommand: ptr("shelley msf-prep"),
+			Thumbnail:      ptr("/static/thumbs/msf-prep.jpg"),
 			SortOrder:      ptr(int64(3)),
 		},
 		{
 			Url:            "https://landcruiser-spares.exe.xyz:8001/",
-			Title:          "Land Cruiser LC100 Parts",
-			Description:    "3D wireframe visualization built from Toyota service manuals for the Land Cruiser 100 series. Enables part identification, memorization, and ordering through an interactive exploded view interface.",
+			Title:          "Land Cruiser 100 Blueprint",
+			Description:    "3D wireframe assembly viewer for Toyota UZJ100/FZJ100. Exploded views from service manuals for parts identification.",
 			ShelleyCommand: ptr("shelley landcruiser-spares"),
+			Thumbnail:      ptr("/static/thumbs/landcruiser.jpg"),
 			SortOrder:      ptr(int64(4)),
 		},
 		{
 			Url:            "https://schools-at.exe.xyz/",
-			Title:          "Austria Schools Directory",
-			Description:    "Comprehensive directory of Austrian schools mapped to municipality level. Includes service quality ratings and enables geographic analysis of educational infrastructure coverage.",
+			Title:          "Schulqualität Österreich",
+			Description:    "5,752 schools across 2,120 municipalities. Service quality ratings, class sizes, and all-day school coverage.",
 			ShelleyCommand: ptr("shelley schools-at"),
+			Thumbnail:      ptr("/static/thumbs/schools.jpg"),
 			SortOrder:      ptr(int64(5)),
 		},
 		{
 			Url:            "https://maternity-ward-closure.exe.xyz/",
-			Title:          "Maternity Ward Access Model",
-			Description:    "Visualizes Austria's maternity wards with driving-distance-based catchment areas using a constrained gravity model weighted by female population data. Enables simulation of ward closure scenarios to assess impact on healthcare accessibility.",
+			Title:          "Geburtshilfe-Erreichbarkeit",
+			Description:    "Maternity ward accessibility via OSRM routing. Simulate closures to see drive time impacts on 90k women aged 15-44.",
 			ShelleyCommand: ptr("shelley maternity-ward-closure"),
+			Thumbnail:      ptr("/static/thumbs/maternity.jpg"),
 			SortOrder:      ptr(int64(6)),
 		},
 		{
 			Url:            "https://child-care-access-at.exe.xyz/",
-			Title:          "Child Care Access Austria",
-			Description:    "National before-school childcare statistics downscaled to municipality level. Provides granular view of early childhood care availability across Austria's administrative regions.",
+			Title:          "Kinderbetreuung Österreich",
+			Description:    "9,863 childcare facilities mapped. 55% average coverage rate, 848 municipalities without infant care.",
 			ShelleyCommand: ptr("shelley child-care-access-at"),
+			Thumbnail:      ptr("/static/thumbs/childcare.jpg"),
 			SortOrder:      ptr(int64(7)),
 		},
 		{
 			Url:            "https://austria-power.exe.xyz/",
-			Title:          "Austria Power Infrastructure",
-			Description:    "Maps Austria's power transformer stations and wind turbines with capacity data. Incorporates Austro Control aviation obstacle data to infer turbine heights. Provides comprehensive view of renewable energy infrastructure.",
+			Title:          "Wind Grid Capacity",
+			Description:    "1,578 turbines, 441 substations, 30 GW installed. Grid feed-in capacity analysis for wind expansion.",
 			ShelleyCommand: ptr("shelley austria-power"),
+			Thumbnail:      ptr("/static/thumbs/power.jpg"),
 			SortOrder:      ptr(int64(8)),
 		},
 		{
 			Url:            "https://farm-subsidies-austria.exe.xyz/",
-			Title:          "Farm Subsidies Austria",
-			Description:    "Detailed breakdown of agricultural subsidies by municipality. Enables users to explore subsidy distribution patterns and identify relevant funding programs they may be eligible to apply for.",
+			Title:          "Agrarsubventionen Österreich",
+			Description:    "€3.6B in EU farm payments visualized by municipality. Compare actual vs expected allocations across 2,117 communes.",
 			ShelleyCommand: ptr("shelley farm-subsidies-austria"),
+			Thumbnail:      ptr("/static/thumbs/farm-subsidies.jpg"),
 			SortOrder:      ptr(int64(9)),
 		},
 	}

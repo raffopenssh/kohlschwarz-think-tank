@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS apps (
     title TEXT NOT NULL,
     description TEXT NOT NULL,
     shelley_command TEXT,
+    thumbnail TEXT,
     sort_order INTEGER DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

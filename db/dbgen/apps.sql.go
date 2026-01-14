@@ -10,9 +10,9 @@ import (
 )
 
 const createApp = `-- name: CreateApp :one
-INSERT INTO apps (url, title, description, shelley_command, sort_order, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-RETURNING id, url, title, description, shelley_command, sort_order, created_at, updated_at
+INSERT INTO apps (url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+RETURNING id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at
 `
 
 type CreateAppParams struct {
@@ -20,6 +20,7 @@ type CreateAppParams struct {
 	Title          string  `json:"title"`
 	Description    string  `json:"description"`
 	ShelleyCommand *string `json:"shelley_command"`
+	Thumbnail      *string `json:"thumbnail"`
 	SortOrder      *int64  `json:"sort_order"`
 }
 
@@ -29,6 +30,7 @@ func (q *Queries) CreateApp(ctx context.Context, arg CreateAppParams) (App, erro
 		arg.Title,
 		arg.Description,
 		arg.ShelleyCommand,
+		arg.Thumbnail,
 		arg.SortOrder,
 	)
 	var i App
@@ -38,6 +40,7 @@ func (q *Queries) CreateApp(ctx context.Context, arg CreateAppParams) (App, erro
 		&i.Title,
 		&i.Description,
 		&i.ShelleyCommand,
+		&i.Thumbnail,
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -55,7 +58,7 @@ func (q *Queries) DeleteApp(ctx context.Context, id int64) error {
 }
 
 const getApp = `-- name: GetApp :one
-SELECT id, url, title, description, shelley_command, sort_order, created_at, updated_at FROM apps WHERE id = ?
+SELECT id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at FROM apps WHERE id = ?
 `
 
 func (q *Queries) GetApp(ctx context.Context, id int64) (App, error) {
@@ -67,6 +70,7 @@ func (q *Queries) GetApp(ctx context.Context, id int64) (App, error) {
 		&i.Title,
 		&i.Description,
 		&i.ShelleyCommand,
+		&i.Thumbnail,
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -75,7 +79,7 @@ func (q *Queries) GetApp(ctx context.Context, id int64) (App, error) {
 }
 
 const listApps = `-- name: ListApps :many
-SELECT id, url, title, description, shelley_command, sort_order, created_at, updated_at FROM apps ORDER BY sort_order ASC, id ASC
+SELECT id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at FROM apps ORDER BY sort_order ASC, id ASC
 `
 
 func (q *Queries) ListApps(ctx context.Context) ([]App, error) {
@@ -93,6 +97,7 @@ func (q *Queries) ListApps(ctx context.Context) ([]App, error) {
 			&i.Title,
 			&i.Description,
 			&i.ShelleyCommand,
+			&i.Thumbnail,
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -116,6 +121,7 @@ UPDATE apps SET
     title = ?,
     description = ?,
     shelley_command = ?,
+    thumbnail = ?,
     sort_order = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
@@ -126,6 +132,7 @@ type UpdateAppParams struct {
 	Title          string  `json:"title"`
 	Description    string  `json:"description"`
 	ShelleyCommand *string `json:"shelley_command"`
+	Thumbnail      *string `json:"thumbnail"`
 	SortOrder      *int64  `json:"sort_order"`
 	ID             int64   `json:"id"`
 }
@@ -136,6 +143,7 @@ func (q *Queries) UpdateApp(ctx context.Context, arg UpdateAppParams) error {
 		arg.Title,
 		arg.Description,
 		arg.ShelleyCommand,
+		arg.Thumbnail,
 		arg.SortOrder,
 		arg.ID,
 	)

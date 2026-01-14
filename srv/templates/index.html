@@ -3,46 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kohlschwarz Think-Tank | Shelley Apps</title>
+    <title>kohlschwarz</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Kohlschwarz Think-Tank</h1>
-            <p class="tagline">Data Processing & Visualization with Shelley on exe.dev</p>
-        </div>
-    </header>
+    <main>
+        <header>
+            <h1>kohlschwarz</h1>
+            <p class="tagline">Apps built with Shelley on <a href="https://exe.dev">exe.dev</a></p>
+        </header>
 
-    <main class="container">
-        <section class="intro">
-            <p>We use <a href="https://exe.dev">exe.dev</a> to create useful services demonstrating data processing and visualization potential. Each app was built in approximately 1-2 hours, including research and plausibility checks. All applications include methodology documentation and permit data download.</p>
-        </section>
-
-        <section class="apps">
+        <div class="grid">
             {{range .Apps}}
-            <article class="app-card">
-                <div class="app-content">
-                    <h2><a href="{{.Url}}" target="_blank" rel="noopener">{{.Title}}</a></h2>
-                    <p class="description">{{.Description}}</p>
+            <a href="{{.Url}}" class="card" target="_blank" rel="noopener">
+                {{if .Thumbnail}}
+                <div class="thumb" style="background-image: url('{{.Thumbnail}}')"></div>
+                {{end}}
+                <div class="content">
+                    <h2>{{.Title}}</h2>
+                    <p>{{.Description}}</p>
                     {{if .ShelleyCommand}}
-                    <div class="command">
-                        <code>{{.ShelleyCommand}}</code>
-                    </div>
+                    <code>{{.ShelleyCommand}}</code>
                     {{end}}
                 </div>
-                <div class="app-link">
-                    <a href="{{.Url}}" target="_blank" rel="noopener" class="visit-btn">→</a>
-                </div>
-            </article>
+            </a>
             {{end}}
-        </section>
-    </main>
-
-    <footer>
-        <div class="container">
-            <p>Built with <a href="https://exe.dev">exe.dev</a> &amp; Shelley</p>
         </div>
-    </footer>
+
+        <footer>
+            <p>Each app: ~1-2 hours with <a href="https://exe.dev">exe.dev</a> · Methods & data included · <a href="/admin">Edit</a></p>
+        </footer>
+    </main>
 </body>
 </html>

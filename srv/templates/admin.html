@@ -3,45 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin | Kohlschwarz Apps</title>
+    <title>Admin | kohlschwarz</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1><a href="/">Kohlschwarz Think-Tank</a></h1>
-            <p class="tagline">Admin Panel</p>
+    <main>
+        <header>
+            <h1><a href="/" style="color:inherit">kohlschwarz</a></h1>
+            <p class="tagline">Admin</p>
+        </header>
+
+        <div class="admin-header">
+            <span>{{len .Apps}} apps</span>
+            <a href="/admin/new" class="btn btn-primary">+ Add</a>
         </div>
-    </header>
 
-    <main class="container">
-        <section class="admin-header">
-            <h2>Manage Apps</h2>
-            <a href="/admin/new" class="btn btn-primary">+ Add New App</a>
-        </section>
-
-        <section class="admin-list">
+        <div class="admin-list">
             {{range .Apps}}
             <div class="admin-item">
                 <div class="admin-item-content">
                     <strong>{{.Title}}</strong>
-                    <span class="url">{{.Url}}</span>
+                    <span>{{.Url}}</span>
                 </div>
                 <div class="admin-item-actions">
-                    <a href="/admin/edit/{{.ID}}" class="btn btn-small">Edit</a>
-                    <form method="POST" action="/admin/delete/{{.ID}}" style="display:inline" onsubmit="return confirm('Delete this app?')">
-                        <button type="submit" class="btn btn-small btn-danger">Delete</button>
+                    <a href="/admin/edit/{{.ID}}" class="btn btn-sm">Edit</a>
+                    <form method="POST" action="/admin/delete/{{.ID}}" style="display:inline" onsubmit="return confirm('Delete?')">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                     </form>
                 </div>
             </div>
             {{end}}
-        </section>
-    </main>
-
-    <footer>
-        <div class="container">
-            <p><a href="/">← Back to site</a></p>
         </div>
-    </footer>
+
+        <footer>
+            <p><a href="/">← Back</a></p>
+        </footer>
+    </main>
 </body>
 </html>

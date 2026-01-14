@@ -3,19 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{if .App}}Edit{{else}}New{{end}} App | Kohlschwarz</title>
+    <title>{{if .App}}Edit{{else}}Add{{end}} | kohlschwarz</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1><a href="/">Kohlschwarz Think-Tank</a></h1>
-            <p class="tagline">{{if .App}}Edit App{{else}}Add New App{{end}}</p>
-        </div>
-    </header>
+    <main>
+        <header>
+            <h1><a href="/" style="color:inherit">kohlschwarz</a></h1>
+            <p class="tagline">{{if .App}}Edit{{else}}Add{{end}} app</p>
+        </header>
 
-    <main class="container">
-        <form method="POST" action="/admin/save" class="edit-form">
+        <form method="POST" action="/admin/save" class="form">
             {{if .App}}
             <input type="hidden" name="id" value="{{.App.ID}}">
             {{end}}
@@ -27,22 +25,27 @@
 
             <div class="form-group">
                 <label for="url">URL</label>
-                <input type="url" id="url" name="url" value="{{if .App}}{{.App.Url}}{{end}}" required placeholder="https://example.exe.xyz/">
+                <input type="url" id="url" name="url" value="{{if .App}}{{.App.Url}}{{end}}" required>
             </div>
 
             <div class="form-group">
                 <label for="description">Description</label>
-                <textarea id="description" name="description" rows="4" required>{{if .App}}{{.App.Description}}{{end}}</textarea>
+                <textarea id="description" name="description" required>{{if .App}}{{.App.Description}}{{end}}</textarea>
             </div>
 
             <div class="form-group">
                 <label for="shelley_command">Shelley Command</label>
-                <input type="text" id="shelley_command" name="shelley_command" value="{{if .App}}{{if .App.ShelleyCommand}}{{.App.ShelleyCommand}}{{end}}{{end}}" placeholder="shelley example-app">
+                <input type="text" id="shelley_command" name="shelley_command" value="{{if .App}}{{if .App.ShelleyCommand}}{{.App.ShelleyCommand}}{{end}}{{end}}">
+            </div>
+
+            <div class="form-group">
+                <label for="thumbnail">Thumbnail URL</label>
+                <input type="text" id="thumbnail" name="thumbnail" value="{{if .App}}{{if .App.Thumbnail}}{{.App.Thumbnail}}{{end}}{{end}}">
             </div>
 
             <div class="form-group">
                 <label for="sort_order">Sort Order</label>
-                <input type="number" id="sort_order" name="sort_order" value="{{if .App}}{{if .App.SortOrder}}{{.App.SortOrder}}{{end}}{{end}}" placeholder="0">
+                <input type="number" id="sort_order" name="sort_order" value="{{if .App}}{{if .App.SortOrder}}{{.App.SortOrder}}{{end}}{{end}}">
             </div>
 
             <div class="form-actions">
@@ -50,12 +53,10 @@
                 <a href="/admin" class="btn">Cancel</a>
             </div>
         </form>
-    </main>
 
-    <footer>
-        <div class="container">
-            <p><a href="/admin">← Back to admin</a></p>
-        </div>
-    </footer>
+        <footer>
+            <p><a href="/admin">← Back</a></p>
+        </footer>
+    </main>
 </body>
 </html>
