@@ -38,7 +38,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=4">
 </head>
 <body>
     <main>
@@ -58,7 +58,9 @@
                     <p>{{.Description}}</p>
                     {{if .Prompt}}
                     <div class="prompt-wrap">
-                        <span class="prompt-btn"><span class="prompt-icon">✨</span> shelley prompt</span>
+                        <button type="button" class="prompt-btn" data-prompt="{{.Prompt}}" onclick="event.preventDefault(); event.stopPropagation(); togglePrompt(this.dataset.prompt)">
+                            <span class="prompt-icon">✨</span> shelley prompt
+                        </button>
                         <div class="prompt-tooltip">{{.Prompt}}</div>
                     </div>
                     {{end}}
@@ -71,5 +73,25 @@
             <p>~1-2 hours each · Methods & data included · <a href="/admin">Edit</a></p>
         </footer>
     </main>
+
+    <div id="prompt-overlay" onclick="closePrompt()"></div>
+    <div id="prompt-sheet">
+        <span class="prompt-close" onclick="closePrompt()">✕</span>
+        <p id="prompt-text"></p>
+    </div>
+
+    <script>
+    function togglePrompt(text) {
+        const sheet = document.getElementById('prompt-sheet');
+        const overlay = document.getElementById('prompt-overlay');
+        document.getElementById('prompt-text').textContent = text;
+        sheet.classList.add('active');
+        overlay.classList.add('active');
+    }
+    function closePrompt() {
+        document.getElementById('prompt-sheet').classList.remove('active');
+        document.getElementById('prompt-overlay').classList.remove('active');
+    }
+    </script>
 </body>
 </html>

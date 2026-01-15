@@ -119,11 +119,14 @@ header h1 {
     font-size: 0.75rem;
     color: var(--faint);
     background: var(--border);
+    border: none;
     padding: 0.375rem 0.625rem;
     border-radius: 3px;
+    cursor: pointer;
     transition: all 0.15s;
 }
 
+.prompt-btn:hover,
 .prompt-wrap:hover .prompt-btn {
     background: var(--muted);
     color: var(--bg);
@@ -148,9 +151,8 @@ header h1 {
     opacity: 0;
     visibility: hidden;
     transform: translateY(4px);
-    transition: all 0.15s ease;
+    transition: all 0.2s ease;
     z-index: 100;
-    pointer-events: none;
 }
 
 .prompt-tooltip::after {
@@ -162,10 +164,63 @@ header h1 {
     border-top-color: var(--fg);
 }
 
-.prompt-wrap:hover .prompt-tooltip {
+.prompt-wrap:hover .prompt-tooltip,
+.prompt-wrap.active .prompt-tooltip {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+}
+
+.prompt-close {
+    display: none;
+}
+
+#prompt-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+}
+
+#prompt-overlay.active {
+    display: block;
+}
+
+#prompt-sheet {
+    display: none;
+}
+
+#prompt-sheet.active {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #111;
+    color: #fff;
+    padding: 2rem 1.5rem;
+    padding-top: 2.5rem;
+    border-radius: 16px 16px 0 0;
+    z-index: 1000;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+#prompt-sheet .prompt-close {
+    display: block;
+    position: absolute;
+    top: 0.75rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+#prompt-sheet .prompt-close:hover {
+    opacity: 1;
 }
 
 /* Footer */
@@ -361,21 +416,9 @@ footer {
         font-size: 0.8125rem;
     }
 
-    /* Tooltip on mobile - show below instead */
+    /* Hide hover tooltip on mobile, use bottom sheet instead */
     .prompt-tooltip {
-        bottom: auto;
-        top: calc(100% + 8px);
-        left: 0;
-        right: 0;
-        width: auto;
-        max-width: none;
-    }
-
-    .prompt-tooltip::after {
-        top: auto;
-        bottom: 100%;
-        border-top-color: transparent;
-        border-bottom-color: var(--fg);
+        display: none;
     }
 
     .admin-item {
