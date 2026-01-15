@@ -91,11 +91,25 @@ header h1 {
     padding: 1.25rem;
 }
 
+.title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
 .content h2 {
     font-size: 1rem;
     font-weight: 600;
-    margin-bottom: 0.5rem;
     letter-spacing: -0.01em;
+}
+
+.click-count {
+    font-size: 0.6875rem;
+    color: var(--faint);
+    background: var(--border);
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
 }
 
 .content p {

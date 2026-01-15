@@ -177,6 +177,23 @@ func (s *Server) HandleAPIApps(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(apps)
 }
 
+func (s *Server) HandleTrackClick(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || id <= 0 {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	q := dbgen.New(s.DB)
+	if err := q.IncrementClickCount(r.Context(), id); err != nil {
+		slog.Warn("increment click", "error", err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"ok":true}`))
+}
+
 func (s *Server) renderTemplate(w http.ResponseWriter, name string, data any) error {
 	path := filepath.Join(s.TemplatesDir, name)
 	tmpl, err := template.ParseFiles(path)
@@ -341,6 +358,7 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("POST /admin/save", s.HandleAdminSave)
 	mux.HandleFunc("POST /admin/delete/{id}", s.HandleAdminDelete)
 	mux.HandleFunc("GET /api/apps", s.HandleAPIApps)
+	mux.HandleFunc("POST /api/click/{id}", s.HandleTrackClick)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(s.StaticDir))))
 	slog.Info("starting server", "addr", addr)
 	return http.ListenAndServe(addr, mux)

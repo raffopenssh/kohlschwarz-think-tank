@@ -23,3 +23,6 @@ WHERE id = ?;
 
 -- name: DeleteApp :exec
 DELETE FROM apps WHERE id = ?;
+
+-- name: IncrementClickCount :exec
+UPDATE apps SET click_count = click_count + 1 WHERE id = ?;

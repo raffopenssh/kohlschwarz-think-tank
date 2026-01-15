@@ -19,6 +19,7 @@ type App struct {
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	Prompt         *string   `json:"prompt"`
+	ClickCount     *int64    `json:"click_count"`
 }
 
 type Migration struct {

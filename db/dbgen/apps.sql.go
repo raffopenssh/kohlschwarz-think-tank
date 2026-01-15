@@ -12,7 +12,7 @@ import (
 const createApp = `-- name: CreateApp :one
 INSERT INTO apps (url, title, description, shelley_command, thumbnail, sort_order, prompt, created_at, updated_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-RETURNING id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at, prompt
+RETURNING id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at, prompt, click_count
 `
 
 type CreateAppParams struct {
@@ -47,6 +47,7 @@ func (q *Queries) CreateApp(ctx context.Context, arg CreateAppParams) (App, erro
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Prompt,
+		&i.ClickCount,
 	)
 	return i, err
 }
@@ -61,7 +62,7 @@ func (q *Queries) DeleteApp(ctx context.Context, id int64) error {
 }
 
 const getApp = `-- name: GetApp :one
-SELECT id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at, prompt FROM apps WHERE id = ?
+SELECT id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at, prompt, click_count FROM apps WHERE id = ?
 `
 
 func (q *Queries) GetApp(ctx context.Context, id int64) (App, error) {
@@ -78,12 +79,22 @@ func (q *Queries) GetApp(ctx context.Context, id int64) (App, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Prompt,
+		&i.ClickCount,
 	)
 	return i, err
 }
 
+const incrementClickCount = `-- name: IncrementClickCount :exec
+UPDATE apps SET click_count = click_count + 1 WHERE id = ?
+`
+
+func (q *Queries) IncrementClickCount(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, incrementClickCount, id)
+	return err
+}
+
 const listApps = `-- name: ListApps :many
-SELECT id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at, prompt FROM apps ORDER BY sort_order ASC, id ASC
+SELECT id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at, prompt, click_count FROM apps ORDER BY sort_order ASC, id ASC
 `
 
 func (q *Queries) ListApps(ctx context.Context) ([]App, error) {
@@ -106,6 +117,7 @@ func (q *Queries) ListApps(ctx context.Context) ([]App, error) {
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Prompt,
+			&i.ClickCount,
 		); err != nil {
 			return nil, err
 		}
