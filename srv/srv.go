@@ -66,7 +66,23 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+const adminPassword = "UZfzx7Ro"
+
+func (s *Server) requireAuth(w http.ResponseWriter, r *http.Request) bool {
+	user, pass, ok := r.BasicAuth()
+	if !ok || user != "admin" || pass != adminPassword {
+		w.Header().Set("WWW-Authenticate", `Basic realm="Admin"`)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return false
+	}
+	return true
+}
+
 func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
+	if !s.requireAuth(w, r) {
+		return
+	}
+
 	q := dbgen.New(s.DB)
 	apps, err := q.ListApps(r.Context())
 	if err != nil {
@@ -85,6 +101,10 @@ func (s *Server) HandleAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) HandleAdminEdit(w http.ResponseWriter, r *http.Request) {
+	if !s.requireAuth(w, r) {
+		return
+	}
+
 	idStr := r.PathValue("id")
 	id, _ := strconv.ParseInt(idStr, 10, 64)
 
@@ -107,6 +127,10 @@ func (s *Server) HandleAdminEdit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) HandleAdminSave(w http.ResponseWriter, r *http.Request) {
+	if !s.requireAuth(w, r) {
+		return
+	}
+
 	idStr := r.FormValue("id")
 	id, _ := strconv.ParseInt(idStr, 10, 64)
 
@@ -153,6 +177,10 @@ func (s *Server) HandleAdminSave(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) HandleAdminDelete(w http.ResponseWriter, r *http.Request) {
+	if !s.requireAuth(w, r) {
+		return
+	}
+
 	idStr := r.PathValue("id")
 	id, _ := strconv.ParseInt(idStr, 10, 64)
 
