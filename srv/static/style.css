@@ -150,39 +150,9 @@ header h1 {
     font-size: 0.875rem;
 }
 
+/* Hide the old tooltip - we use the bottom sheet for all now */
 .prompt-tooltip {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 0;
-    width: 320px;
-    padding: 1rem;
-    background: var(--fg);
-    color: var(--bg);
-    font-size: 0.8125rem;
-    line-height: 1.6;
-    border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(4px);
-    transition: all 0.2s ease;
-    z-index: 100;
-}
-
-.prompt-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 20px;
-    border: 6px solid transparent;
-    border-top-color: var(--fg);
-}
-
-.prompt-wrap:hover .prompt-tooltip,
-.prompt-wrap.active .prompt-tooltip {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+    display: none;
 }
 
 .prompt-close {
@@ -203,24 +173,46 @@ header h1 {
 
 #prompt-sheet {
     display: none;
+    position: fixed;
+    background: #111;
+    color: #fff;
+    z-index: 1000;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    overflow-y: auto;
 }
 
 #prompt-sheet.active {
     display: block;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: #111;
-    color: #fff;
-    padding: 2rem 1.5rem;
-    padding-top: 2.5rem;
-    border-radius: 16px 16px 0 0;
-    z-index: 1000;
-    font-size: 0.875rem;
-    line-height: 1.7;
-    max-height: 60vh;
-    overflow-y: auto;
+}
+
+/* Desktop: centered modal */
+@media (min-width: 769px) {
+    #prompt-sheet {
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 560px;
+        width: 90%;
+        max-height: 70vh;
+        padding: 2rem;
+        padding-top: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+}
+
+/* Mobile: bottom sheet */
+@media (max-width: 768px) {
+    #prompt-sheet {
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 60vh;
+        padding: 2rem 1.5rem;
+        padding-top: 2.5rem;
+        border-radius: 16px 16px 0 0;
+    }
 }
 
 #prompt-sheet .prompt-close {
