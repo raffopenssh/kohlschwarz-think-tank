@@ -520,6 +520,16 @@ footer {
     font-size: 0.75rem;
 }
 
+.github-icon {
+    vertical-align: middle;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+}
+
+.github-icon:hover {
+    opacity: 1;
+}
+
 /* Contact modal */
 #contact-overlay {
     display: none;
