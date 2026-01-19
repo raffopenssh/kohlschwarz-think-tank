@@ -11,6 +11,7 @@ Restart=always
 RestartSec=5
 Environment=HOME=/home/exedev
 Environment=USER=exedev
+EnvironmentFile=/home/exedev/shelley-apps/.env
 StandardOutput=journal
 StandardError=journal
 

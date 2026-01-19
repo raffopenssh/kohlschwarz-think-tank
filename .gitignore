@@ -5,3 +5,5 @@
 
 # Compiled binary
 server
+start.sh
+.env

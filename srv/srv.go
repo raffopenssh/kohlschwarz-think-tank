@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -66,9 +67,11 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-const adminPassword = "UZfzx7Ro"
-
 func (s *Server) requireAuth(w http.ResponseWriter, r *http.Request) bool {
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	if adminPassword == "" {
+		adminPassword = "changeme" // fallback for local dev
+	}
 	user, pass, ok := r.BasicAuth()
 	if !ok || user != "admin" || pass != adminPassword {
 		w.Header().Set("WWW-Authenticate", `Basic realm="Admin"`)
