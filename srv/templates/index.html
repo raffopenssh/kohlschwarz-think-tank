@@ -74,11 +74,18 @@
 
         <footer>
             <p>~1-2 hours each · Methods & data included</p>
-            <p class="legal-links"><a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a></p>
+            <p class="legal-links"><a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a> · <a href="#" onclick="event.preventDefault(); document.getElementById('contact-overlay').classList.add('active'); document.getElementById('contact-modal').classList.add('active');">Contact</a></p>
         </footer>
     </main>
 
     <div id="prompt-overlay" onclick="closePrompt()"></div>
+
+    <div id="contact-overlay" onclick="closeContact()"></div>
+    <div id="contact-modal">
+        <span class="modal-close" onclick="closeContact()">✕</span>
+        <h3>Contact</h3>
+        <p>We're not on Discord, but there's old fashioned <a href="mailto:raffaelhickisch+kohlschwarz@gmail.com">email</a>.</p>
+    </div>
     <div id="prompt-sheet">
         <span class="prompt-close" onclick="closePrompt()">✕</span>
         <p id="prompt-text"></p>
@@ -98,6 +105,10 @@
     }
     function trackClick(id) {
         fetch('/api/click/' + id, {method: 'POST'}).catch(() => {});
+    }
+    function closeContact() {
+        document.getElementById('contact-modal').classList.remove('active');
+        document.getElementById('contact-overlay').classList.remove('active');
     }
     </script>
 </body>

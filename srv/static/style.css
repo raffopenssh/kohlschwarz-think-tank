@@ -527,3 +527,59 @@ footer {
     margin-top: 0.5rem;
     font-size: 0.75rem;
 }
+
+/* Contact modal */
+#contact-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+}
+
+#contact-overlay.active {
+    display: block;
+}
+
+#contact-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg);
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+    z-index: 1000;
+    max-width: 400px;
+    width: 90%;
+}
+
+#contact-modal.active {
+    display: block;
+}
+
+#contact-modal h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+#contact-modal p {
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+#contact-modal .modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.25rem;
+    color: var(--faint);
+    cursor: pointer;
+}
+
+#contact-modal .modal-close:hover {
+    color: var(--fg);
+}
