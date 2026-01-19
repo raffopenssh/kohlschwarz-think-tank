@@ -403,6 +403,16 @@ func (s *Server) HandleDatenschutz(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (s *Server) Serve(addr string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.HandleRoot)
@@ -419,5 +429,5 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("POST /api/click/{id}", s.HandleTrackClick)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(s.StaticDir))))
 	slog.Info("starting server", "addr", addr)
-	return http.ListenAndServe(addr, mux)
+	return http.ListenAndServe(addr, securityHeaders(mux))
 }
