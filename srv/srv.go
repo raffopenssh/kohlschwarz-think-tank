@@ -375,9 +375,25 @@ Sitemap: https://kohlschwarz.exe.xyz:8000/sitemap.xml
 `))
 }
 
+func (s *Server) HandleImpressum(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.renderTemplate(w, "impressum.html", nil); err != nil {
+		slog.Warn("render template", "url", r.URL.Path, "error", err)
+	}
+}
+
+func (s *Server) HandleDatenschutz(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.renderTemplate(w, "datenschutz.html", nil); err != nil {
+		slog.Warn("render template", "url", r.URL.Path, "error", err)
+	}
+}
+
 func (s *Server) Serve(addr string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.HandleRoot)
+	mux.HandleFunc("GET /impressum", s.HandleImpressum)
+	mux.HandleFunc("GET /datenschutz", s.HandleDatenschutz)
 	mux.HandleFunc("GET /sitemap.xml", s.HandleSitemap)
 	mux.HandleFunc("GET /robots.txt", s.HandleRobots)
 	mux.HandleFunc("GET /admin", s.HandleAdmin)
