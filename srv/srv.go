@@ -350,17 +350,17 @@ func (s *Server) HandleSitemap(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://kohlschwarz.at:8000/</loc>
+    <loc>https://kohlschwarz.at/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://kohlschwarz.at:8000/impressum</loc>
+    <loc>https://kohlschwarz.at/impressum</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://kohlschwarz.at:8000/datenschutz</loc>
+    <loc>https://kohlschwarz.at/datenschutz</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -382,7 +382,7 @@ func (s *Server) HandleRobots(w http.ResponseWriter, r *http.Request) {
 Allow: /
 Disallow: /admin
 
-Sitemap: https://kohlschwarz.at:8000/sitemap.xml
+Sitemap: https://kohlschwarz.at/sitemap.xml
 `))
 }
 
