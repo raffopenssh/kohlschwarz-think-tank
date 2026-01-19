@@ -23,7 +23,7 @@
                 Goldschlagstraße 23/18<br>
                 1150 Wien<br>
                 Österreich<br>
-                E-Mail: <a href="mailto:raffaelhickisch+kohlschwarz@gmail.com">raffaelhickisch+kohlschwarz@gmail.com</a>
+                E-Mail: <a href="#" class="obf-email"></a>
             </p>
         </section>
 
@@ -118,5 +118,15 @@
             <a href="/">Startseite</a> · <a href="/impressum">Impressum</a>
         </footer>
     </main>
+<script>
+(function(){
+    var u='raffaelhickisch',d='gmail',s='+kohlschwarz';
+    var e=u+s+'@'+d+'.com';
+    document.querySelectorAll('.obf-email').forEach(function(a){
+        a.href='mai'+'lto:'+e;
+        a.textContent=e;
+    });
+})();
+</script>
 </body>
 </html>

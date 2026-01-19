@@ -84,7 +84,7 @@
     <div id="contact-modal">
         <span class="modal-close" onclick="closeContact()">✕</span>
         <h3>Contact</h3>
-        <p>We're not on Discord, but there's old fashioned <a href="mailto:raffaelhickisch+kohlschwarz@gmail.com">email</a>.</p>
+        <p>We're not on Discord, but there's old fashioned <a href="#" id="contact-email">email</a>.</p>
     </div>
     <div id="prompt-sheet">
         <span class="prompt-close" onclick="closePrompt()">✕</span>
@@ -110,6 +110,12 @@
         document.getElementById('contact-modal').classList.remove('active');
         document.getElementById('contact-overlay').classList.remove('active');
     }
+    (function(){
+        var u='raffaelhickisch',d='gmail',s='+kohlschwarz';
+        var e=u+s+'@'+d+'.com';
+        var a=document.getElementById('contact-email');
+        a.href='mai'+'lto:'+e;
+    })();
     </script>
 </body>
 </html>
