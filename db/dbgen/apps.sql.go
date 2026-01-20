@@ -94,7 +94,7 @@ func (q *Queries) IncrementClickCount(ctx context.Context, id int64) error {
 }
 
 const listApps = `-- name: ListApps :many
-SELECT id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at, prompt, click_count FROM apps ORDER BY sort_order ASC, id ASC
+SELECT id, url, title, description, shelley_command, thumbnail, sort_order, created_at, updated_at, prompt, click_count FROM apps ORDER BY click_count DESC, sort_order ASC, id ASC
 `
 
 func (q *Queries) ListApps(ctx context.Context) ([]App, error) {

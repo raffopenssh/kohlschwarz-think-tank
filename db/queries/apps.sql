@@ -1,5 +1,5 @@
 -- name: ListApps :many
-SELECT * FROM apps ORDER BY sort_order ASC, id ASC;
+SELECT * FROM apps ORDER BY click_count DESC, sort_order ASC, id ASC;
 
 -- name: GetApp :one
 SELECT * FROM apps WHERE id = ?;
