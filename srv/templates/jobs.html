@@ -28,13 +28,13 @@ pre{white-space:pre-wrap;color:#555;font-size:12px}.msg{background:#eef;padding:
 </p>
 <p class="meta">{{.CostLine}}<br>Budget cap {{.Budget}}/month · email threshold score ≥ {{.MinScore}}</p>
 
-<h2>Postings ({{len .Rows}})</h2>
+<h2>Postings ({{len .Rows}}, deduplicated)</h2>
 {{range .Rows}}
 <div class="row{{if .IsNew}} new{{end}}">
   {{$sc := .ScoreVal}}<span class="s {{if ge $sc 85}}s90{{else if ge $sc 65}}s70{{else if ge $sc 35}}s40{{else}}s0{{end}}">{{if lt $sc 0}}–{{else}}{{$sc}}{{end}}</span>
   <a href="{{.URL}}" target="_blank" rel="noopener">{{.Title}}</a>
   {{if .Hidden}}<span class="dim">(hidden)</span>{{end}}
-  <br><span class="meta">{{if .Org}}{{.Org}} · {{end}}{{if .Location}}{{.Location}} · {{end}}{{.Region}}{{if .Kind}} · {{.Kind}}{{end}}{{if .Lang}} · {{.Lang}}{{end}}{{if .Posted}} · posted {{.Posted}}{{end}}{{if .Deadline}} · deadline {{.Deadline}}{{end}} · first seen {{.FirstSeen}}{{if .ReportedAt}} · emailed{{end}} · via {{.Source}}</span>
+  <br><span class="meta">{{if .Org}}{{.Org}} · {{end}}{{if .Location}}{{.Location}} · {{end}}{{.Region}}{{if .Kind}} · {{.Kind}}{{end}}{{if .Lang}} · {{.Lang}}{{end}}{{if .Deadline}} · deadline {{.Deadline}}{{end}} · <b>since {{.Since}}</b>{{if .Dupes}} · +{{.Dupes}} copies{{end}}{{if .ReportedAt}} · emailed{{end}} · via {{.Source}}</span>
   {{if .Why}}<br><span class="why">→ {{.Why}}</span>{{end}}
   <form method="post" action="/admin/jobs/hide/{{.ID}}">{{if .Hidden}}<input type="hidden" name="unhide" value="1"><button>unhide</button>{{else}}<button>hide</button>{{end}}</form>
 </div>

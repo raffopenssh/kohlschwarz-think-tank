@@ -145,7 +145,7 @@ func rankBatch(ctx context.Context, rows []Row) ([]rankResult, int64, int64, err
 	})
 	req, _ := http.NewRequestWithContext(ctx, "POST", llmURL, bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := (&http.Client{Timeout: 120 * time.Second}).Do(req)
+	resp, err := (&http.Client{Timeout: 240 * time.Second}).Do(req)
 	if err != nil {
 		return nil, 0, 0, err
 	}

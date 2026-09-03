@@ -13,8 +13,8 @@ import (
 
 func (s *Server) siteURL() string {
 	h := s.Hostname
-	if h == "" || h == "localhost" {
-		return "https://kohlschwarz.exe.xyz"
+	if h == "" || h == "localhost" || !strings.Contains(h, ".") {
+		return "https://kohlschwarz.at"
 	}
 	if strings.HasPrefix(h, "http") {
 		return h
@@ -54,6 +54,7 @@ func (s *Server) HandleAdminJobs(w http.ResponseWriter, r *http.Request) {
 			unranked++
 		}
 	}
+	rows = jobs.Dedupe(rows)
 	cost := jobs.GetCost(ctx, s.DB)
 	data := jobsPage{
 		Hostname: s.Hostname, Rows: rows, Runs: runs, Cost: cost, CostLine: cost.CostLine(),

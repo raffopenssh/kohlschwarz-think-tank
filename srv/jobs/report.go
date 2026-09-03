@@ -18,58 +18,110 @@ const emailEndpoint = "http://169.254.169.254/gateway/email/send"
 // ReportMinScore is the threshold for "really interesting".
 const ReportMinScore = 70
 
-// BuildReport renders the plain-text weekly report. Returns text and the ids included.
+// ReportMax caps the number of new items per weekly email; the best-scoring go first.
+const ReportMax = 10
+
+// BuildReport renders the plain-text weekly digest: the best new matches (deduped,
+// score ≥ ReportMinScore, at most ReportMax) each with a one-sentence fit note,
+// then a compact list of earlier picks that are still open. Returns text and the
+// ids covered (including collapsed duplicates) so they are marked as reported.
 func BuildReport(ctx context.Context, db *sql.DB, siteURL string) (string, []int64) {
-	fresh, _ := Unreported(ctx, db, ReportMinScore)
+	freshAll, _ := Unreported(ctx, db, ReportMinScore)
 	all, _ := List(ctx, db, false, 400)
 	cost := GetCost(ctx, db)
 	lastFetch := LastRun(ctx, db, "fetch")
 
-	var b strings.Builder
-	fmt.Fprintf(&b, "NATIONAL PARK LEADERSHIP RADAR — week of %s\n", time.Now().UTC().Format("2 Jan 2006"))
-	b.WriteString("Senior park director roles & PA consultancies · Austria / Sub-Saharan Africa / global · EN/DE/FR\n")
-	b.WriteString(strings.Repeat("=", 72) + "\n\n")
-
+	fresh := Dedupe(freshAll)
+	if len(fresh) > ReportMax {
+		fresh = fresh[:ReportMax]
+	}
+	// Mark every copy of a reported item (so dupes don't resurface next week).
 	var ids []int64
-	if len(fresh) == 0 {
-		b.WriteString("No new postings scoring ≥ 70 this week.\n\n")
-	} else {
-		fmt.Fprintf(&b, "NEW & INTERESTING (%d, score ≥ %d)\n\n", len(fresh), ReportMinScore)
+	if len(fresh) > 0 {
+		picked := map[string]bool{}
 		for _, r := range fresh {
-			ids = append(ids, r.ID)
-			writeRow(&b, r)
+			picked[DedupeKey(r)] = true
+		}
+		for _, r := range freshAll {
+			if picked[DedupeKey(r)] {
+				ids = append(ids, r.ID)
+			}
 		}
 	}
 
-	// Still-open reminders: previously reported, deadline in the future or seen in the last week.
+	var b strings.Builder
+	fmt.Fprintf(&b, "PARK LEADERSHIP RADAR · %s\n", time.Now().UTC().Format("Mon 2 Jan 2006"))
+	b.WriteString("Park director roles & senior PA consultancies · Austria / Sub-Saharan Africa / global\n")
+	b.WriteString(strings.Repeat("=", 64) + "\n\n")
+
+	if len(fresh) == 0 {
+		b.WriteString("Nothing new worth your time this week (no new posting scored ≥ 70).\n\n")
+	} else {
+		fmt.Fprintf(&b, "THIS WEEK'S PICKS (%d)\n\n", len(fresh))
+		for i, r := range fresh {
+			writePick(&b, i+1, r)
+		}
+	}
+
+	// Still open: reported earlier, deadline in future or still listed at source.
+	today := time.Now().Format("2006-01-02")
 	var open []Row
-	for _, r := range all {
+	for _, r := range Dedupe(all) {
 		if r.ReportedAt == nil || r.ScoreVal() < ReportMinScore {
 			continue
 		}
-		if (r.Deadline != "" && r.Deadline >= time.Now().Format("2006-01-02")) || recentlySeen(r) {
+		if (r.Deadline != "" && r.Deadline >= today) || (r.Deadline == "" && recentlySeen(r)) {
 			open = append(open, r)
 		}
 	}
 	if len(open) > 0 {
-		fmt.Fprintf(&b, "\nSTILL OPEN (reported earlier, %d)\n\n", len(open))
+		fmt.Fprintf(&b, "STILL OPEN FROM EARLIER WEEKS (%d)\n", len(open))
 		for i, r := range open {
-			if i >= 15 {
-				fmt.Fprintf(&b, "  … and %d more at %s/admin/jobs\n", len(open)-15, siteURL)
+			if i >= 12 {
+				fmt.Fprintf(&b, "  … %d more: %s/admin/jobs\n", len(open)-12, siteURL)
 				break
 			}
-			fmt.Fprintf(&b, "  [%d] %s — %s%s\n      %s\n", r.ScoreVal(), r.Title, orgLoc(r), dl(r), r.URL)
+			fmt.Fprintf(&b, "  · %s — %s%s\n    %s\n", r.Title, orgLoc(r), dl(r), r.URL)
 		}
+		b.WriteString("\n")
 	}
 
-	b.WriteString("\n" + strings.Repeat("-", 72) + "\n")
+	b.WriteString(strings.Repeat("-", 64) + "\n")
 	if lastFetch != nil {
-		fmt.Fprintf(&b, "Sources: %d ok, %d failed · %d postings scanned, %d keyword matches, %d new this run\n",
-			lastFetch.SourcesOK, lastFetch.SourcesErr, lastFetch.Found, lastFetch.Matched, lastFetch.NewCount)
+		fmt.Fprintf(&b, "Scan: %d sources (%d failed) · %d postings · %d keyword matches · %d new\n",
+			lastFetch.SourcesOK+lastFetch.SourcesErr, lastFetch.SourcesErr, lastFetch.Found, lastFetch.Matched, lastFetch.NewCount)
 	}
 	b.WriteString(cost.CostLine() + "\n")
-	fmt.Fprintf(&b, "Full list & controls: %s/admin/jobs\n", siteURL)
+	fmt.Fprintf(&b, "All entries, hide/unhide, run log: %s/admin/jobs\n", siteURL)
 	return b.String(), ids
+}
+
+// writePick renders one digest entry:
+//
+//  1. Title — Org, Location
+//     Why it fits (one sentence). Score 95 · SSA · director · deadline 2026-09-30 · listed since 2026-09-01
+//     https://…
+func writePick(b *strings.Builder, n int, r Row) {
+	fmt.Fprintf(b, "%d. %s", n, r.Title)
+	if ol := orgLoc(r); ol != "" {
+		fmt.Fprintf(b, " — %s", ol)
+	}
+	b.WriteString("\n")
+	if r.Why != "" {
+		fmt.Fprintf(b, "   %s\n", strings.TrimRight(r.Why, ".")+".")
+	}
+	meta := []string{fmt.Sprintf("score %d", r.ScoreVal()), strings.ToUpper(r.Region)}
+	if r.Kind != "" && r.Kind != "other" {
+		meta = append(meta, r.Kind)
+	}
+	if r.Deadline != "" {
+		meta = append(meta, "deadline "+r.Deadline)
+	}
+	meta = append(meta, "listed since "+r.Since())
+	if r.Dupes > 0 {
+		meta = append(meta, fmt.Sprintf("%d further copies", r.Dupes))
+	}
+	fmt.Fprintf(b, "   %s\n   %s\n\n", strings.Join(meta, " · "), r.URL)
 }
 
 func recentlySeen(r Row) bool {
@@ -93,32 +145,6 @@ func dl(r Row) string {
 		return " · deadline " + r.Deadline
 	}
 	return ""
-}
-
-func writeRow(b *strings.Builder, r Row) {
-	tags := []string{strings.ToUpper(r.Region)}
-	if r.Kind != "" {
-		tags = append(tags, r.Kind)
-	}
-	if r.Lang != "" {
-		tags = append(tags, r.Lang)
-	}
-	fmt.Fprintf(b, "[%d] %s\n", r.ScoreVal(), r.Title)
-	if ol := orgLoc(r); ol != "" {
-		fmt.Fprintf(b, "     %s\n", ol)
-	}
-	meta := strings.Join(tags, " · ")
-	if r.Posted != "" {
-		meta += " · posted " + r.Posted
-	}
-	if r.Deadline != "" {
-		meta += " · deadline " + r.Deadline
-	}
-	fmt.Fprintf(b, "     %s\n", meta)
-	if r.Why != "" {
-		fmt.Fprintf(b, "     → %s\n", r.Why)
-	}
-	fmt.Fprintf(b, "     %s\n     via %s\n\n", r.URL, r.Source)
 }
 
 // SendEmail posts a plain-text email via the exe.dev gateway.
@@ -146,13 +172,14 @@ func SendEmail(ctx context.Context, to, subject, body string) error {
 // WeeklyReport builds and emails the report; marks postings as reported. Set force to send even when nothing new.
 func WeeklyReport(ctx context.Context, db *sql.DB, to, siteURL string, force bool) (string, error) {
 	text, ids := BuildReport(ctx, db, siteURL)
-	run := Run{Started: time.Now().UTC().Format("2006-01-02 15:04:05"), Kind: "email", NewCount: int64(len(ids))}
+	picks := strings.Count(text, "\n   score ") // one meta line per pick
+	run := Run{Started: time.Now().UTC().Format("2006-01-02 15:04:05"), Kind: "email", NewCount: int64(picks)}
 	if len(ids) == 0 && !force {
 		run.Log = "nothing new ≥ " + fmt.Sprint(ReportMinScore) + "; email skipped"
 		insertRun(ctx, db, run)
 		return text, nil
 	}
-	subj := fmt.Sprintf("Park leadership radar: %d new · %s", len(ids), time.Now().UTC().Format("2 Jan"))
+	subj := fmt.Sprintf("Park radar · %d pick(s) · %s", picks, time.Now().UTC().Format("2 Jan"))
 	if err := SendEmail(ctx, to, subj, text); err != nil {
 		run.Log = "send failed: " + err.Error()
 		insertRun(ctx, db, run)

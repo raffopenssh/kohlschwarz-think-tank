@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -122,6 +123,14 @@ func (s *Server) requireAuth(w http.ResponseWriter, r *http.Request) bool {
 	if r.Header.Get("X-ExeDev-Email") != "" {
 		// Logged in via exe.dev, but not the owner.
 		http.Error(w, "Forbidden", http.StatusForbidden)
+		return false
+	}
+	// Not logged in: bounce through exe.dev login (works on *.exe.xyz and the
+	// custom domain, both served by the exe.dev proxy). Basic auth remains as
+	// an explicit fallback via ?basic=1 or when running without the proxy.
+	_, _, hasBasic := r.BasicAuth()
+	if !hasBasic && r.URL.Query().Get("basic") == "" && r.Method == http.MethodGet && r.Header.Get("X-Forwarded-Host") != "" {
+		http.Redirect(w, r, "/__exe.dev/login?redirect="+url.QueryEscape(r.URL.RequestURI()), http.StatusFound)
 		return false
 	}
 	adminPassword := os.Getenv("ADMIN_PASSWORD")
