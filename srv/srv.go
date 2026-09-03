@@ -16,6 +16,7 @@ import (
 
 	"srv.exe.dev/db"
 	"srv.exe.dev/db/dbgen"
+	"srv.exe.dev/srv/jobs"
 )
 
 type Server struct {
@@ -32,6 +33,7 @@ type pageData struct {
 	Error    string
 	Success  string
 	Lang     string // "de" or "en"
+	IsAdmin  bool   // exe.dev-authenticated owner
 }
 
 func (p pageData) DE() bool { return p.Lang != "en" }
@@ -88,6 +90,7 @@ func (s *Server) renderIndex(w http.ResponseWriter, r *http.Request, lang string
 		Hostname: s.Hostname,
 		Apps:     apps,
 		Lang:     lang,
+		IsAdmin:  s.isAdmin(r),
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -96,7 +99,31 @@ func (s *Server) renderIndex(w http.ResponseWriter, r *http.Request, lang string
 	}
 }
 
+// AdminEmail is the exe.dev account allowed to see /admin. Set via ADMIN_EMAIL; defaults to the VM owner.
+func adminEmail() string {
+	if e := os.Getenv("ADMIN_EMAIL"); e != "" {
+		return strings.ToLower(e)
+	}
+	return "raffaelhickisch+exedev@gmail.com"
+}
+
+// isAdmin is true when the request carries the exe.dev auth header for the admin email.
+func (s *Server) isAdmin(r *http.Request) bool {
+	return strings.EqualFold(strings.TrimSpace(r.Header.Get("X-ExeDev-Email")), adminEmail())
+}
+
+// requireAuth gates admin pages: exe.dev login (owner email) is the primary
+// mechanism; HTTP basic auth with ADMIN_PASSWORD remains as a fallback for
+// access paths that bypass the exe.dev proxy (e.g. kohlschwarz.at via Cloudflare).
 func (s *Server) requireAuth(w http.ResponseWriter, r *http.Request) bool {
+	if s.isAdmin(r) {
+		return true
+	}
+	if r.Header.Get("X-ExeDev-Email") != "" {
+		// Logged in via exe.dev, but not the owner.
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return false
+	}
 	adminPassword := os.Getenv("ADMIN_PASSWORD")
 	if adminPassword == "" {
 		adminPassword = "changeme" // fallback for local dev
@@ -568,6 +595,13 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /admin/new", s.HandleAdminEdit)
 	mux.HandleFunc("POST /admin/save", s.HandleAdminSave)
 	mux.HandleFunc("POST /admin/delete/{id}", s.HandleAdminDelete)
+	mux.HandleFunc("GET /admin/jobs", s.HandleAdminJobs)
+	mux.HandleFunc("GET /admin/jobs/report.txt", s.HandleAdminJobsReport)
+	mux.HandleFunc("POST /admin/jobs/fetch", s.HandleAdminJobsFetch)
+	mux.HandleFunc("POST /admin/jobs/rank", s.HandleAdminJobsRank)
+	mux.HandleFunc("POST /admin/jobs/email", s.HandleAdminJobsEmail)
+	mux.HandleFunc("POST /admin/jobs/hide/{id}", s.HandleAdminJobsHide)
+	go jobs.Scheduler(context.Background(), s.DB, adminEmail(), s.siteURL())
 	mux.HandleFunc("GET /llm.txt", s.HandleLLMTxt)
 	mux.HandleFunc("GET /api/apps", s.HandleAPIApps)
 	mux.HandleFunc("POST /api/click/{id}", s.HandleTrackClick)
