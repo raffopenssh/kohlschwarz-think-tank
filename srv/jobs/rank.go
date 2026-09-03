@@ -62,6 +62,7 @@ type rankResult struct {
 }
 
 var jsonArrRe = regexp.MustCompile(`(?s)\[\s*\{.*\}\s*\]`)
+var jsonObjRe = regexp.MustCompile(`\{[^{}]*\}`)
 
 // RankPending scores unranked postings in batches, respecting the monthly budget.
 func RankPending(ctx context.Context, db *sql.DB, maxItems int) Run {
@@ -88,23 +89,35 @@ func RankPending(ctx context.Context, db *sql.DB, maxItems int) Run {
 	}
 	const batch = 12
 	spent := 0.0
-	for i := 0; i < len(rows); i += batch {
+	// pending is processed in batches; a failed batch is split in half and
+	// retried so a single timeout / truncated reply doesn't leave items unranked.
+	pending := rows
+	for len(pending) > 0 {
 		if cost.MonthUSD+spent >= budget {
-			fmt.Fprintf(&logb, "budget reached mid-run after %d items\n", run.Ranked)
+			fmt.Fprintf(&logb, "budget reached mid-run, %d left unranked\n", len(pending))
 			break
 		}
-		end := min(i+batch, len(rows))
-		res, in, out, err := rankBatch(ctx, rows[i:end])
+		n := min(batch, len(pending))
+		cur := pending[:n]
+		pending = pending[n:]
+		res, in, out, err := rankBatch(ctx, cur)
 		run.InTokens += in
 		run.OutTokens += out
-		c := float64(in)*priceInPerM/1e6 + float64(out)*priceOutPerM/1e6
+		c := costUSD(in, out)
 		spent += c
 		run.CostUSD += c
 		if err != nil {
-			fmt.Fprintf(&logb, "✗ batch %d: %v\n", i/batch, err)
 			slog.Warn("jobs rank", "error", err)
+			if len(cur) > 1 && ctx.Err() == nil {
+				fmt.Fprintf(&logb, "✗ batch of %d: %v → retrying in halves\n", len(cur), err)
+				half := len(cur) / 2
+				pending = append(append([]Row{}, cur[:half]...), append(cur[half:], pending...)...)
+				continue
+			}
+			fmt.Fprintf(&logb, "✗ %d item(s) failed: %v\n", len(cur), err)
 			continue
 		}
+		scored := map[int64]bool{}
 		for _, r := range res {
 			if r.Score < 0 {
 				r.Score = 0
@@ -117,9 +130,22 @@ func RankPending(ctx context.Context, db *sql.DB, maxItems int) Run {
 				r.Score, r.Kind, truncate(r.Why, 120), r.Region, r.Region, r.ID)
 			if err == nil {
 				run.Ranked++
+				scored[r.ID] = true
 			}
 		}
-		fmt.Fprintf(&logb, "✓ batch %d: %d scored, %d in / %d out tokens, %s\n", i/batch, len(res), in, out, usd(c))
+		// Items the model silently dropped go back to the queue once.
+		var missed []Row
+		for _, r := range cur {
+			if !scored[r.ID] && !r.retried {
+				r.retried = true
+				missed = append(missed, r)
+			}
+		}
+		if len(missed) > 0 {
+			fmt.Fprintf(&logb, "· %d item(s) missing from reply, requeued\n", len(missed))
+			pending = append(missed, pending...)
+		}
+		fmt.Fprintf(&logb, "✓ batch of %d: %d scored, %d in / %d out tokens, %s\n", len(cur), len(res), in, out, usd(c))
 	}
 	run.Log = logb.String()
 	if err := insertRun(ctx, db, run); err != nil {
@@ -134,19 +160,29 @@ func rankBatch(ctx context.Context, rows []Row) ([]rankResult, int64, int64, err
 		fmt.Fprintf(&sb, "id=%d | %s | org: %s | loc: %s | posted: %s | deadline: %s | src: %s\n  %s\n",
 			r.ID, r.Title, r.Org, r.Location, r.Posted, r.Deadline, r.Source, truncate(r.Snippet, 350))
 	}
-	content, nIn, nOut, err := chat(ctx, systemPrompt, sb.String(), 600+220*len(rows))
+	content, nIn, nOut, err := chat(ctx, systemPrompt, sb.String(), 800+300*len(rows))
 	if err != nil {
 		return nil, nIn, nOut, err
 	}
 	r := struct{ Usage struct{ In, Out int64 } }{}
 	r.Usage.In, r.Usage.Out = nIn, nOut
-	m := jsonArrRe.FindString(content)
-	if m == "" {
-		return nil, r.Usage.In, r.Usage.Out, fmt.Errorf("no JSON array in reply: %.200s", content)
-	}
 	var res []rankResult
-	if err := json.Unmarshal([]byte(m), &res); err != nil {
-		return nil, r.Usage.In, r.Usage.Out, fmt.Errorf("parse JSON: %w", err)
+	if m := jsonArrRe.FindString(content); m != "" {
+		if err := json.Unmarshal([]byte(m), &res); err != nil {
+			res = nil
+		}
+	}
+	if res == nil {
+		// Truncated / malformed array: salvage every complete object.
+		for _, o := range jsonObjRe.FindAllString(content, -1) {
+			var x rankResult
+			if json.Unmarshal([]byte(o), &x) == nil && x.ID != 0 {
+				res = append(res, x)
+			}
+		}
+	}
+	if len(res) == 0 {
+		return nil, r.Usage.In, r.Usage.Out, fmt.Errorf("no JSON array in reply: %.200s", content)
 	}
 	// Only accept ids we sent.
 	valid := map[int64]bool{}

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Park leadership radar · admin</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/static/radar.css?v=3">
+<link rel="stylesheet" href="/static/radar.css?v=4">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -36,7 +36,8 @@
 <a class="btn" href="/admin/jobs/report.txt">preview</a>
 {{if .ShowHidden}}<a class="btn" href="/admin/jobs"><svg class="i"><use href="#i-eye"/></svg>hide hidden</a>{{else}}<a class="btn" href="/admin/jobs?hidden=1"><svg class="i"><use href="#i-eyeoff"/></svg>show hidden</a>{{end}}
 </div>
-<details><summary>LLM cost &amp; budget</summary><p class="meta">{{.CostLine}}<br>Budget cap {{.Budget}}/month · email threshold score ≥ {{.MinScore}}</p></details>{{else}}<p class="tiny">read-only view · <a href="/admin/jobs/report.txt">weekly report preview</a></p>{{end}}
+<details><summary>LLM cost &amp; budget</summary><p class="meta">{{.CostLine}}<br>Budget cap {{.Budget}}/month · email threshold score ≥ {{.MinScore}}</p>
+<form method="post" action="/admin/jobs/voucher" onsubmit="return confirm('Credit this month\'s spend so budget usage shows $0?')"><button class="small">apply voucher · reset this month to $0</button></form></details>{{else}}<p class="tiny">read-only view · <a href="/admin/jobs/report.txt">weekly report preview</a></p>{{end}}
 
 <h2>Postings <span class="n">{{len .Rows}}, deduplicated</span></h2>
 <div class="filters" id="filters">
@@ -71,13 +72,14 @@
 {{else}}<p class="dim">No postings yet — click “fetch now”.</p>{{end}}
 </div>
 
-<h2>Runs</h2>
-<div class="list runs">
-{{range .Runs}}
-<div class="card"><b>{{.Kind}}</b> <span class="mono dim">{{.Started}} UTC</span>{{if eq .Kind "fetch"}} · {{.SourcesOK}} ok / {{.SourcesErr}} failed · {{.Found}} scanned · {{.Matched}} matched · {{.NewCount}} new{{end}}{{if eq .Kind "rank"}} · {{.Ranked}} ranked · {{.InTokens}} in / {{.OutTokens}} out tokens · ${{printf "%.4f" .CostUSD}}{{end}}{{if eq .Kind "email"}} · {{.NewCount}} new items{{end}}
-<details><summary>log</summary><pre>{{.Log}}</pre></details></div>
+<details class="runs"><summary><h2>Runs <span class="n">{{len .Runs}}</span></h2></summary>
+<ul class="runlist">
+{{range .Runs}}<li class="run run-{{.Kind}}"><span class="kind">{{.Kind}}</span><time class="dim" datetime="{{.Started}}" title="{{.Started}} UTC">{{runAgo .}}</time>
+<span class="sum">{{if eq .Kind "fetch"}}{{.NewCount}} new · {{.Matched}}/{{.Found}} matched{{if .SourcesErr}} · <span class="warn">{{.SourcesErr}} failed</span>{{end}}{{else if eq .Kind "rank"}}{{.Ranked}} ranked · ${{printf "%.4f" .CostUSD}}{{else if eq .Kind "email"}}{{.NewCount}} items{{else if eq .Kind "summary"}}${{printf "%.4f" .CostUSD}}{{end}}</span>
+{{if .Log}}<details class="log"><summary>log</summary><pre>{{.Log}}</pre></details>{{end}}</li>
 {{end}}
-</div>
-<script src="/static/radar.js?v=2"></script>
+</ul>
+</details>
+<script src="/static/radar.js?v=3"></script>
 </body>
 </html>

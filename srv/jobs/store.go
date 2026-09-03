@@ -12,6 +12,7 @@ import (
 // Row is a stored posting.
 type Row struct {
 	ID         int64
+	retried    bool // rank: already requeued once after being dropped from a reply
 	URL        string
 	Source     string
 	Title      string
@@ -218,6 +219,8 @@ type Cost struct {
 	TotalIn   int64
 	TotalOut  int64
 	MonthName string
+	Credit    float64 // one-time voucher applied to this month (settings llm_credit_YYYY-MM)
+	SpentUSD  float64 // raw spend this month before credit
 }
 
 func GetCost(ctx context.Context, db *sql.DB) Cost {
@@ -225,13 +228,31 @@ func GetCost(ctx context.Context, db *sql.DB) Cost {
 	c.MonthName = time.Now().UTC().Format("January 2006")
 	db.QueryRowContext(ctx, `SELECT COALESCE(SUM(llm_cost_usd),0), COALESCE(SUM(llm_in_tokens),0), COALESCE(SUM(llm_out_tokens),0) FROM job_runs WHERE strftime('%Y-%m', started) = strftime('%Y-%m','now')`).Scan(&c.MonthUSD, &c.MonthIn, &c.MonthOut)
 	db.QueryRowContext(ctx, `SELECT COALESCE(SUM(llm_cost_usd),0), COALESCE(SUM(llm_in_tokens),0), COALESCE(SUM(llm_out_tokens),0) FROM job_runs`).Scan(&c.TotalUSD, &c.TotalIn, &c.TotalOut)
+	c.SpentUSD = c.MonthUSD
+	db.QueryRowContext(ctx, `SELECT CAST(value AS REAL) FROM settings WHERE key = ?`, CreditKey()).Scan(&c.Credit)
+	c.MonthUSD = max(0, c.SpentUSD-c.Credit)
 	return c
+}
+
+// CreditKey is the settings key of this month's voucher.
+func CreditKey() string { return "llm_credit_" + time.Now().UTC().Format("2006-01") }
+
+// ApplyVoucher zeroes this month's budget usage by crediting what has been spent so far.
+func ApplyVoucher(ctx context.Context, db *sql.DB) (float64, error) {
+	c := GetCost(ctx, db)
+	_, err := db.ExecContext(ctx, `INSERT INTO settings(key,value,updated_at) VALUES(?,?,strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+		ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at`, CreditKey(), fmt.Sprintf("%.6f", c.SpentUSD))
+	return c.SpentUSD, err
 }
 
 // CostLine renders the mandatory cost line for reports.
 func (c Cost) CostLine() string {
-	return fmt.Sprintf("LLM cost (%s via exe.dev gateway): %s this month (%s, %d in / %d out tokens) · %s cumulative total (%d in / %d out tokens)",
-		Model, usd(c.MonthUSD), c.MonthName, c.MonthIn, c.MonthOut, usd(c.TotalUSD), c.TotalIn, c.TotalOut)
+	credit := ""
+	if c.Credit > 0 {
+		credit = fmt.Sprintf(", %s spent − %s voucher", usd(c.SpentUSD), usd(c.Credit))
+	}
+	return fmt.Sprintf("LLM cost (%s via exe.dev gateway): %s this month (%s, %d in / %d out tokens%s) · %s cumulative total (%d in / %d out tokens)",
+		Model, usd(c.MonthUSD), c.MonthName, c.MonthIn, c.MonthOut, credit, usd(c.TotalUSD), c.TotalIn, c.TotalOut)
 }
 
 func usd(v float64) string {

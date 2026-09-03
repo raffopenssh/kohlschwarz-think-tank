@@ -127,3 +127,18 @@ details summary{cursor:pointer;color:var(--faint);font-size:.85rem}
 .kv dt{color:var(--muted)}.kv dd{margin:0;overflow-wrap:anywhere}
 .kv .warn,.msg .warn{color:var(--soon-fg)}
 @media (max-width:480px){.kv{grid-template-columns:1fr;gap:.1rem}.kv dt{margin-top:.5rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em}}
+
+/* runs log (collapsed) */
+details.runs{margin-top:1.5rem}
+details.runs>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:.4rem}
+details.runs>summary::-webkit-details-marker{display:none}
+details.runs>summary::before{content:"";width:.5em;height:.5em;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);transition:transform .2s;margin-right:.3rem}
+details.runs[open]>summary::before{transform:rotate(45deg)}
+details.runs>summary h2{display:inline;margin:0}
+.runlist{list-style:none;margin:.5rem 0 0;padding:0;font-size:.9rem}
+.run{display:grid;grid-template-columns:auto auto 1fr;gap:.2rem .6rem;align-items:baseline;padding:.4rem 0;border-top:1px solid var(--line)}
+.run .kind{font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;padding:.1em .45em;border-radius:.3em;background:var(--chip,#eef)}
+
+.run time{font-variant-numeric:tabular-nums}
+.run .log{grid-column:1/-1}.run .log summary{cursor:pointer;color:var(--muted);font-size:.8rem}
+.run pre{font-size:.75rem;white-space:pre-wrap;margin:.3rem 0 0;max-height:14rem;overflow:auto}

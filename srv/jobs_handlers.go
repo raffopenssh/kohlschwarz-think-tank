@@ -48,7 +48,14 @@ type jobsPage struct {
 	Viewers    int
 }
 
-func runAgo(r *jobs.Run) string {
+func runAgo(v any) string {
+	var r *jobs.Run
+	switch x := v.(type) {
+	case *jobs.Run:
+		r = x
+	case jobs.Run:
+		r = &x
+	}
 	if r == nil {
 		return ""
 	}
@@ -180,6 +187,19 @@ func (s *Server) HandleAdminJobsEmail(w http.ResponseWriter, r *http.Request) {
 		}
 		return "email sent to " + adminEmail()
 	})
+}
+
+// HandleAdminJobsVoucher applies a one-time voucher that resets this month's budget usage to $0.
+func (s *Server) HandleAdminJobsVoucher(w http.ResponseWriter, r *http.Request) {
+	if !s.requireAuth(w, r) {
+		return
+	}
+	amt, err := jobs.ApplyVoucher(r.Context(), s.DB)
+	msg := fmt.Sprintf("voucher applied: %s credited, budget usage reset to $0", fmt.Sprintf("$%.3f", amt))
+	if err != nil {
+		msg = "voucher failed: " + err.Error()
+	}
+	http.Redirect(w, r, "/admin/jobs?msg="+url.QueryEscape(msg), http.StatusSeeOther)
 }
 
 func (s *Server) HandleAdminJobsHide(w http.ResponseWriter, r *http.Request) {

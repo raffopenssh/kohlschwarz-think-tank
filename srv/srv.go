@@ -637,6 +637,7 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /admin/jobs/status.json", s.HandleAdminJobsStatus)
 	mux.HandleFunc("POST /admin/jobs/fetch", s.HandleAdminJobsFetch)
 	mux.HandleFunc("POST /admin/jobs/rank", s.HandleAdminJobsRank)
+	mux.HandleFunc("POST /admin/jobs/voucher", s.HandleAdminJobsVoucher)
 	mux.HandleFunc("POST /admin/jobs/email", s.HandleAdminJobsEmail)
 	mux.HandleFunc("POST /admin/jobs/hide/{id}", s.HandleAdminJobsHide)
 	mux.HandleFunc("GET /admin/funding", s.HandleAdminFunding)
