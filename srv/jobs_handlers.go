@@ -40,7 +40,6 @@ type jobsPage struct {
 	ShowHidden bool
 	Model      string
 	LastFetch  *jobs.Run
-	LastRank   *jobs.Run
 	LastEmail  *jobs.Run
 	Activity   jobs.ActivityState
 	Updated    string // last fetch finished, e.g. "2026-09-03 04:00 UTC"
@@ -84,7 +83,7 @@ func (s *Server) HandleAdminJobs(w http.ResponseWriter, r *http.Request) {
 		Hostname: s.Hostname, Rows: rows, Runs: runs, Cost: cost, CostLine: cost.CostLine(),
 		Budget: "$" + strconv.FormatFloat(jobs.MaxMonthUSD(), 'f', 2, 64), MinScore: jobs.ReportMinScore,
 		Sources: len(jobs.Sources), Unranked: unranked, Msg: r.URL.Query().Get("msg"), ShowHidden: showHidden, Model: jobs.Model,
-		LastFetch: lf, LastRank: jobs.LastRun(ctx, s.DB, "rank"), LastEmail: jobs.LastRun(ctx, s.DB, "email"),
+		LastFetch: lf, LastEmail: jobs.LastRun(ctx, s.DB, "email"),
 		Activity: jobs.Current.State(), UpdatedAgo: runAgo(lf),
 		Owner: owner, Viewers: len(s.viewers(ctx)),
 	}
@@ -153,8 +152,11 @@ func (s *Server) HandleAdminJobsFetch(w http.ResponseWriter, r *http.Request) {
 		run := jobs.FetchAll(ctx, s.DB)
 		jobs.Current.Switch("rank")
 		rk := jobs.RankPending(ctx, s.DB, 200)
-		return fmt.Sprintf("fetched: %d scanned, %d matched, %d new, %d sources failed · ranked %d, cost $%.4f",
-			run.Found, run.Matched, run.NewCount, run.SourcesErr, rk.Ranked, rk.CostUSD)
+		msg := fmt.Sprintf("%d new, %d ranked", run.NewCount, rk.Ranked)
+		if run.SourcesErr > 0 {
+			msg += fmt.Sprintf(", %d sources failed", run.SourcesErr)
+		}
+		return msg
 	})
 }
 
