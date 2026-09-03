@@ -87,7 +87,7 @@ func RankPending(ctx context.Context, db *sql.DB, maxItems int) Run {
 		insertRun(ctx, db, run)
 		return run
 	}
-	const batch = 12
+	batch := 12
 	spent := 0.0
 	// pending is processed in batches; a failed batch is split in half and
 	// retried so a single timeout / truncated reply doesn't leave items unranked.
@@ -110,8 +110,8 @@ func RankPending(ctx context.Context, db *sql.DB, maxItems int) Run {
 			slog.Warn("jobs rank", "error", err)
 			if len(cur) > 1 && ctx.Err() == nil {
 				fmt.Fprintf(&logb, "✗ batch of %d: %v → retrying in halves\n", len(cur), err)
-				half := len(cur) / 2
-				pending = append(append([]Row{}, cur[:half]...), append(cur[half:], pending...)...)
+				batch = max(1, len(cur)/2)
+				pending = append(append([]Row{}, cur...), pending...)
 				continue
 			}
 			fmt.Fprintf(&logb, "✗ %d item(s) failed: %v\n", len(cur), err)
@@ -146,6 +146,7 @@ func RankPending(ctx context.Context, db *sql.DB, maxItems int) Run {
 			pending = append(missed, pending...)
 		}
 		fmt.Fprintf(&logb, "✓ batch of %d: %d scored, %d in / %d out tokens, %s\n", len(cur), len(res), in, out, usd(c))
+		batch = min(12, batch*2) // grow back after a success
 	}
 	run.Log = logb.String()
 	if err := insertRun(ctx, db, run); err != nil {
@@ -160,7 +161,7 @@ func rankBatch(ctx context.Context, rows []Row) ([]rankResult, int64, int64, err
 		fmt.Fprintf(&sb, "id=%d | %s | org: %s | loc: %s | posted: %s | deadline: %s | src: %s\n  %s\n",
 			r.ID, r.Title, r.Org, r.Location, r.Posted, r.Deadline, r.Source, truncate(r.Snippet, 350))
 	}
-	content, nIn, nOut, err := chat(ctx, systemPrompt, sb.String(), 800+300*len(rows))
+	content, nIn, nOut, err := chat(ctx, systemPrompt, sb.String(), 1500+400*len(rows))
 	if err != nil {
 		return nil, nIn, nOut, err
 	}
@@ -205,6 +206,9 @@ func chat(ctx context.Context, system, user string, maxTokens int) (string, int6
 		"model":       Model,
 		"temperature": 0,
 		"max_tokens":  maxTokens,
+		// muse-glimmer is a reasoning model: at default effort its thinking
+		// alone regularly exceeds max_tokens and content comes back null.
+		"reasoning_effort": "low",
 		"messages": []map[string]string{
 			{"role": "system", "content": system},
 			{"role": "user", "content": user},
@@ -223,6 +227,7 @@ func chat(ctx context.Context, system, user string, maxTokens int) (string, int6
 			Message struct {
 				Content string `json:"content"`
 			} `json:"message"`
+			FinishReason string `json:"finish_reason"`
 		} `json:"choices"`
 		Usage struct {
 			In  int64 `json:"prompt_tokens"`
@@ -236,7 +241,11 @@ func chat(ctx context.Context, system, user string, maxTokens int) (string, int6
 	if r.Error != nil || len(r.Choices) == 0 {
 		return "", r.Usage.In, r.Usage.Out, fmt.Errorf("llm error (HTTP %d): %.300s", resp.StatusCode, b)
 	}
-	return r.Choices[0].Message.Content, r.Usage.In, r.Usage.Out, nil
+	c := r.Choices[0]
+	if c.FinishReason == "length" && strings.TrimSpace(c.Message.Content) == "" {
+		return "", r.Usage.In, r.Usage.Out, fmt.Errorf("reasoning exhausted max_tokens=%d (%d out tokens, no answer)", maxTokens, r.Usage.Out)
+	}
+	return c.Message.Content, r.Usage.In, r.Usage.Out, nil
 }
 
 func costUSD(in, out int64) float64 {
