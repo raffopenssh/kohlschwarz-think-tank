@@ -149,9 +149,12 @@ func (s *Server) HandleAdminJobsFetch(w http.ResponseWriter, r *http.Request) {
 	if !s.requireAuth(w, r) {
 		return
 	}
-	s.startBackground(w, r, "fetch", 10*time.Minute, func(ctx context.Context) string {
+	s.startBackground(w, r, "fetch", 20*time.Minute, func(ctx context.Context) string {
 		run := jobs.FetchAll(ctx, s.DB)
-		return fmt.Sprintf("fetched: %d scanned, %d matched, %d new, %d sources failed", run.Found, run.Matched, run.NewCount, run.SourcesErr)
+		jobs.Current.Switch("rank")
+		rk := jobs.RankPending(ctx, s.DB, 200)
+		return fmt.Sprintf("fetched: %d scanned, %d matched, %d new, %d sources failed · ranked %d, cost $%.4f",
+			run.Found, run.Matched, run.NewCount, run.SourcesErr, rk.Ranked, rk.CostUSD)
 	})
 }
 

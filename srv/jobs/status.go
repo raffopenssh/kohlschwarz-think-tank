@@ -27,6 +27,15 @@ func (a *Activity) Start(kind string) bool {
 	return true
 }
 
+// Switch relabels the running activity (e.g. fetch → rank) without releasing the slot.
+func (a *Activity) Switch(kind string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.kind != "" {
+		a.kind, a.started = kind, time.Now()
+	}
+}
+
 // Finish releases the slot and records a summary line.
 func (a *Activity) Finish(summary string) {
 	a.mu.Lock()

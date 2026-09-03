@@ -277,12 +277,10 @@ func Scheduler(ctx context.Context, db *sql.DB, to, siteURL string) {
 			continue
 		}
 		r := FetchAll(ctx, db)
-		Current.Finish(fmt.Sprintf("scheduled fetch: %d new", r.NewCount))
+		Current.Switch("rank")
+		rk := RankPending(ctx, db, 200)
+		Current.Finish(fmt.Sprintf("scheduled fetch: %d new · ranked %d", r.NewCount, rk.Ranked))
 		if time.Now().UTC().Weekday() == time.Monday {
-			if Current.Start("rank") {
-				RankPending(ctx, db, 200)
-				Current.Finish("scheduled rank")
-			}
 			if Current.Start("email") {
 				if _, err := WeeklyReport(ctx, db, to, siteURL, false); err != nil {
 					slog.Warn("jobs weekly report", "error", err)
