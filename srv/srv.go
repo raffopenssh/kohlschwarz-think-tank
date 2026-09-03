@@ -598,7 +598,11 @@ func securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
 		// Cache static assets for 1 week, HTML for 1 hour
-		if strings.HasPrefix(r.URL.Path, "/static/") {
+		if strings.HasPrefix(r.URL.Path, "/admin") {
+			// Auth redirects and admin pages must never be cached: a cached
+			// 302 → /__exe.dev/login produced an endless redirect loop.
+			w.Header().Set("Cache-Control", "no-store")
+		} else if strings.HasPrefix(r.URL.Path, "/static/") {
 			w.Header().Set("Cache-Control", "public, max-age=604800, immutable")
 		} else if r.URL.Path == "/sitemap.xml" || r.URL.Path == "/robots.txt" {
 			w.Header().Set("Cache-Control", "public, max-age=86400")
