@@ -101,6 +101,7 @@ func Upcoming(ctx context.Context, db *sql.DB, days, minScore int) ([]Entry, err
 func Seed(ctx context.Context, db *sql.DB) (int, error) {
 	n := 0
 	for _, e := range Seeds {
+		e = applyVerified(e)
 		res, err := db.ExecContext(ctx, `INSERT INTO funding (key, name, url, kind, track, amount, deadline, deadline_note, eligibility, note, score, why)
 			VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
 			ON CONFLICT(key) DO UPDATE SET name=excluded.name, url=excluded.url, kind=excluded.kind, track=excluded.track,
