@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Config · admin</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/static/radar.css?v=3">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+<symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 6l-3-3"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+</svg>
+
+<p class="top"><a href="/admin">← admin</a> · <a href="/admin/jobs">jobs radar</a> · <a href="/admin/funding">funding radar</a> · <a href="/">site</a></p>
+<h1>Config</h1>
+<p class="lead">Who may see the radars, and what the server is running with. Changes apply immediately, no restart.</p>
+{{if .Msg}}<p class="msg ok">{{.Msg}}</p>{{end}}{{if .Err}}<p class="msg">{{.Err}}</p>{{end}}
+
+<h2>Viewers <span class="n">{{len .Viewers}}</span></h2>
+<p class="meta">exe.dev accounts allowed to <em>see</em> <a href="/admin/jobs">/admin/jobs</a> and <a href="/admin/funding">/admin/funding</a> (read-only: no fetch, rank, hide, status or notes). They log in at <a href="{{.AdminURL}}/admin/jobs">{{.AdminURL}}/admin/jobs</a> with their exe.dev account.</p>
+<ul class="people">
+  <li class="owner"><svg class="i"><use href="#i-key"/></svg><span class="mono">{{.AdminEmail}}</span><span class="tag">owner</span></li>
+  {{range .Viewers}}<li><svg class="i"><use href="#i-user"/></svg><span class="mono">{{.}}</span><span class="tag">viewer</span>
+    <form method="post" action="/admin/config/viewers" onsubmit="return confirm('Remove {{.}}?')"><input type="hidden" name="remove" value="{{.}}"><button class="ghost" aria-label="remove {{.}}"><svg class="i"><use href="#i-x"/></svg><span class="lbl">remove</span></button></form></li>
+  {{end}}
+  <li class="add"><form method="post" action="/admin/config/viewers">
+    <svg class="i"><use href="#i-plus"/></svg>
+    <input type="email" name="email" placeholder="name@example.com" required autocomplete="off" spellcheck="false" inputmode="email">
+    <button>add viewer</button>
+  </form></li>
+</ul>
+
+<h2>Runtime</h2>
+<dl class="kv">
+  <dt>owner login</dt><dd class="mono">{{.AdminEmail}} <span class="tiny">(ADMIN_EMAIL)</span></dd>
+  <dt>admin URL</dt><dd class="mono">{{.AdminURL}} <span class="tiny">(ADMIN_URL, used in emails)</span></dd>
+  <dt>password fallback</dt><dd>{{if .Password}}<svg class="i"><use href="#i-lock"/></svg> set via ADMIN_PASSWORD (user <span class="mono">admin</span>, owner only){{else}}<span class="warn">not set — default in use</span>{{end}}</dd>
+  <dt>LLM</dt><dd class="mono">{{.Model}} · cap {{.Budget}}/month <span class="tiny">(JOBS_LLM_BUDGET_USD)</span></dd>
+</dl>
+<p class="tiny">Env values live in <span class="mono">.env</span> and need <span class="mono">systemctl restart srv</span>; the viewer list is stored in the database.</p>
+</body>
+</html>

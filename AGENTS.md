@@ -13,7 +13,7 @@ journalctl -u srv -n 50 --no-pager
 - Local check: `curl -u admin:$(grep ADMIN_PASSWORD .env|cut -d= -f2) localhost:8000/admin/jobs`. Headless browser can't send basic auth → save HTML to a tmp dir and serve with `busybox httpd` on a free port (8765 is often taken).
 - If restart loops with "address already in use": `sudo ss -ltnp | grep :8000` and kill the orphan `server`.
 - Templates are parsed per request (`renderTemplate`, FuncMap: `runAgo`) → template/CSS/JS edits need no rebuild, Go edits do. Bump `?v=` on `radar.css`/`radar.js` links after changes.
-- Migrations: `db/migrations/NNN-name.sql`, applied at startup; end with `INSERT OR IGNORE INTO migrations …`. Latest: 008.
+- Migrations: `db/migrations/NNN-name.sql`, applied at startup; end with `INSERT OR IGNORE INTO migrations …`. Latest: 009 (settings k/v).
 - Commit with `git add <files>` explicitly (blind `git add -A` is blocked).
 
 ## Layout
@@ -41,3 +41,6 @@ db/                        sqlite open + migrations; dbgen = sqlc output for pub
 
 ## Style
 - Mobile-first, text-first admin UI; no frameworks, inline SVG symbols, system fonts. Descriptive commits (see `git log`).
+
+## Access model
+- **Owner** (`ADMIN_EMAIL`, or basic-auth fallback) → everything. **Viewers** (allowlist in `settings.viewer_emails`, edited at `/admin/config`) → read-only `/admin/jobs`, `/admin/funding`, `report.txt`, `status.json`; every POST and `/admin/config` stays owner-only (`requireAuth`). Handlers use `requireViewer` → `(ok, owner)`; templates hide controls with `{{if .Owner}}`.

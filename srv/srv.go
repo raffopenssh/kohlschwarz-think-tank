@@ -599,6 +599,7 @@ func securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
 		// Cache static assets for 1 week, HTML for 1 hour
 		if strings.HasPrefix(r.URL.Path, "/admin") {
+			w.Header().Set("Vary", "X-ExeDev-Email")
 			// Auth redirects and admin pages must never be cached: a cached
 			// 302 → /__exe.dev/login produced an endless redirect loop.
 			w.Header().Set("Cache-Control", "no-store")
@@ -629,6 +630,8 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /admin/new", s.HandleAdminEdit)
 	mux.HandleFunc("POST /admin/save", s.HandleAdminSave)
 	mux.HandleFunc("POST /admin/delete/{id}", s.HandleAdminDelete)
+	mux.HandleFunc("GET /admin/config", s.HandleAdminConfig)
+	mux.HandleFunc("POST /admin/config/viewers", s.HandleAdminConfigViewers)
 	mux.HandleFunc("GET /admin/jobs", s.HandleAdminJobs)
 	mux.HandleFunc("GET /admin/jobs/report.txt", s.HandleAdminJobsReport)
 	mux.HandleFunc("GET /admin/jobs/status.json", s.HandleAdminJobsStatus)

@@ -22,7 +22,7 @@
 <symbol id="i-spin" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></symbol>
 </svg>
 
-<p class="top"><a href="/admin">← admin</a> · <a href="/admin/funding">funding radar</a> · <a href="/">site</a></p>
+<p class="top">{{if .Owner}}<a href="/admin">← admin</a> · {{end}}<a href="/admin/funding">funding radar</a>{{if .Owner}} · <a href="/admin/config">config{{if .Viewers}} <span class="n">{{.Viewers}} viewer{{if ne .Viewers 1}}s{{end}}</span>{{end}}</a>{{end}} · <a href="/">site</a></p>
 <h1>Park leadership radar</h1>
 <p class="lead">National park director / manager roles &amp; high-level PA consultancies · Austria · Sub-Saharan Africa · global/EU · EN/DE/FR · {{.Sources}} sources · weekly fetch+rank+email (Mon 04:00 UTC), daily fetch.</p>
 <p class="status" id="status" data-running="{{.Activity.Running}}" data-since="{{.Activity.Since}}" data-done="{{.Activity.Done}}">
@@ -30,14 +30,14 @@
   <span class="upd" id="upd"{{if .Activity.Running}} hidden{{end}}>{{if .Updated}}<svg class="i"><use href="#i-clock"/></svg>updated <time datetime="{{.Updated}}" title="{{.Updated}}">{{.UpdatedAgo}}</time>{{if .LastFetch}} · {{.LastFetch.NewCount}} new{{if .LastFetch.SourcesErr}} · <span class="warn">{{.LastFetch.SourcesErr}} sources failed</span>{{end}}{{end}}{{if .LastRank}} · ranked {{runAgo .LastRank}}{{end}}{{if .LastEmail}} · emailed {{runAgo .LastEmail}}{{end}}{{else}}never fetched{{end}}</span>
 </p>
 {{if .Msg}}<p class="msg">{{.Msg}}</p>{{end}}{{if and .Activity.Last (not .Msg) (not .Activity.Running)}}<p class="msg" id="lastmsg">{{.Activity.Last}}</p>{{end}}
-<div class="bar" id="bar">
+{{if .Owner}}<div class="bar" id="bar">
 <form method="post" action="/admin/jobs/fetch"><button><svg class="i"><use href="#i-rss"/></svg>fetch now</button></form>
 <form method="post" action="/admin/jobs/rank"><button>rank {{.Unranked}} unranked</button></form>
 <form method="post" action="/admin/jobs/email"><button><svg class="i"><use href="#i-mail"/></svg>email report</button></form>
 <a class="btn" href="/admin/jobs/report.txt">preview</a>
 {{if .ShowHidden}}<a class="btn" href="/admin/jobs"><svg class="i"><use href="#i-eye"/></svg>hide hidden</a>{{else}}<a class="btn" href="/admin/jobs?hidden=1"><svg class="i"><use href="#i-eyeoff"/></svg>show hidden</a>{{end}}
 </div>
-<details><summary>LLM cost &amp; budget</summary><p class="meta">{{.CostLine}}<br>Budget cap {{.Budget}}/month · email threshold score ≥ {{.MinScore}}</p></details>
+<details><summary>LLM cost &amp; budget</summary><p class="meta">{{.CostLine}}<br>Budget cap {{.Budget}}/month · email threshold score ≥ {{.MinScore}}</p></details>{{else}}<p class="tiny">read-only view · <a href="/admin/jobs/report.txt">weekly report preview</a></p>{{end}}
 
 <h2>Postings <span class="n">{{len .Rows}}, deduplicated</span></h2>
 <div class="filters" id="filters">
@@ -66,7 +66,7 @@
   <button class="tog" type="button" aria-expanded="false"><svg class="i"><use href="#i-chev"/></svg><span class="open">details</span><span class="close">less</span></button>
   <div class="more">
     <div class="line"><svg class="i"><use href="#i-clock"/></svg><span>since <b>{{.Since}}</b> · last seen <b title="{{.LastSeen}} UTC">{{.SeenAgo}}</b> · via {{.Source}}{{if .Dupes}} · +{{.Dupes}} {{if eq .Dupes 1}}copy{{else}}copies{{end}} merged{{end}}</span></div>
-    <div class="actions"><form method="post" action="/admin/jobs/hide/{{.ID}}">{{if .Hidden}}<input type="hidden" name="unhide" value="1"><button class="ghost"><svg class="i"><use href="#i-eye"/></svg>unhide</button>{{else}}<button class="ghost"><svg class="i"><use href="#i-eyeoff"/></svg>hide</button>{{end}}</form></div>
+    {{if $.Owner}}<div class="actions"><form method="post" action="/admin/jobs/hide/{{.ID}}">{{if .Hidden}}<input type="hidden" name="unhide" value="1"><button class="ghost"><svg class="i"><use href="#i-eye"/></svg>unhide</button>{{else}}<button class="ghost"><svg class="i"><use href="#i-eyeoff"/></svg>hide</button>{{end}}</form></div>{{end}}
   </div>
 </article>
 {{else}}<p class="dim">No postings yet — click “fetch now”.</p>{{end}}

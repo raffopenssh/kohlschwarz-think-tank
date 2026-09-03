@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Funding radar · admin</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/static/radar.css?v=2">
+<link rel="stylesheet" href="/static/radar.css?v=3">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -19,11 +19,11 @@
 <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/></symbol>
 </svg>
 
-<p class="top"><a href="/admin">← admin</a> · <a href="/admin/jobs">jobs radar</a> · <a href="/">site</a></p>
+<p class="top">{{if .Owner}}<a href="/admin">← admin</a> · {{end}}<a href="/admin/jobs">jobs radar</a>{{if .Owner}} · <a href="/admin/config">config{{if .Viewers}} <span class="n">{{.Viewers}} viewer{{if ne .Viewers 1}}s{{end}}</span>{{end}}</a>{{end}} · <a href="/">site</a></p>
 <h1>Funding radar</h1>
 <p class="lead">Grants · prizes · accelerators · investors for Veridical Earth / kohlschwarz.at apps. Hand-curated &amp; hand-scored (2026-09-03), no LLM, €0/month. Score = suitability <em>now</em> (solo founder, no entity, Vienna + CAR). Deadlines ≤ 60 days for score ≥ 40 go into the Monday radar email.</p>
 {{if .Msg}}<p class="msg">{{.Msg}}</p>{{end}}
-<div class="bar"><form method="post" action="/admin/funding/reseed"><button><svg class="i"><use href="#i-refresh"/></svg>reseed from code</button></form> <span class="tiny">refreshes curated fields, keeps your status/notes</span></div>
+{{if .Owner}}<div class="bar"><form method="post" action="/admin/funding/reseed"><button><svg class="i"><use href="#i-refresh"/></svg>reseed from code</button></form> <span class="tiny">refreshes curated fields, keeps your status/notes</span></div>{{else}}<p class="tiny">read-only view</p>{{end}}
 
 {{if .Upcoming}}
 <h2>Due in the next 60 days <span class="n">{{len .Upcoming}}</span></h2>
@@ -69,11 +69,11 @@
   <div class="more">
     {{if .Eligibility}}<div class="line el"><svg class="i"><use href="#i-check"/></svg><span>{{.Eligibility}}</span></div>{{end}}
     {{if .Why}}<div class="line sc"><svg class="i"><use href="#i-target"/></svg><span>{{.Why}}</span></div>{{end}}
-    <div class="actions"><form method="post" action="/admin/funding/status/{{.ID}}">
+    {{if $.Owner}}<div class="actions"><form method="post" action="/admin/funding/status/{{.ID}}">
       {{$cur := .Status}}<select name="status" aria-label="status">{{range $.Statuses}}<option value="{{.}}"{{if eq . $cur}} selected{{end}}>{{.}}</option>{{end}}</select>
       <input name="note" value="{{.UserNote}}" placeholder="your note">
       <button>save</button>
-    </form></div>
+    </form></div>{{else if .UserNote}}<div class="line"><span class="dim">note: {{.UserNote}}</span></div>{{end}}
   </div>
 </article>
 {{end}}

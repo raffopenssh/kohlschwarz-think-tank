@@ -110,3 +110,20 @@ button.ghost:hover{color:var(--fg);background:var(--chip)}
 .runs .card{padding-left:0;font-size:.88rem}
 pre{white-space:pre-wrap;color:var(--muted);font-size:12px;font-family:var(--mono)}
 details summary{cursor:pointer;color:var(--faint);font-size:.85rem}
+
+/* config page */
+.msg.ok{background:color-mix(in srgb,var(--s90) 12%,var(--bg));color:var(--s90)}
+.people{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.people li{display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid var(--line);min-height:48px}
+.people li>svg.i{color:var(--faint)}
+.people .mono{flex:1;min-width:0;overflow-wrap:anywhere}
+.people form{display:flex;align-items:center;gap:.4rem;margin:0}
+.people li.add form{flex:1}
+.people li.add input{flex:1;min-width:0;font:inherit;font-size:.9rem;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.4em .6em;min-height:36px}
+.people li.add input:focus{outline:2px solid var(--link);outline-offset:1px;border-color:transparent}
+.people button.ghost .lbl{display:none}
+@media (min-width:640px){.people button.ghost .lbl{display:inline}}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:.35rem 1rem;font-size:.9rem;margin:0}
+.kv dt{color:var(--muted)}.kv dd{margin:0;overflow-wrap:anywhere}
+.kv .warn,.msg .warn{color:var(--soon-fg)}
+@media (max-width:480px){.kv{grid-template-columns:1fr;gap:.1rem}.kv dt{margin-top:.5rem;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em}}

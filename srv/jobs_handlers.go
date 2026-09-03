@@ -45,6 +45,8 @@ type jobsPage struct {
 	Activity   jobs.ActivityState
 	Updated    string // last fetch finished, e.g. "2026-09-03 04:00 UTC"
 	UpdatedAgo string
+	Owner      bool // false for allowlisted viewers (read-only)
+	Viewers    int
 }
 
 func runAgo(r *jobs.Run) string {
@@ -58,7 +60,8 @@ func runAgo(r *jobs.Run) string {
 }
 
 func (s *Server) HandleAdminJobs(w http.ResponseWriter, r *http.Request) {
-	if !s.requireAuth(w, r) {
+	ok, owner := s.requireViewer(w, r)
+	if !ok {
 		return
 	}
 	ctx := r.Context()
@@ -83,6 +86,7 @@ func (s *Server) HandleAdminJobs(w http.ResponseWriter, r *http.Request) {
 		Sources: len(jobs.Sources), Unranked: unranked, Msg: r.URL.Query().Get("msg"), ShowHidden: showHidden, Model: jobs.Model,
 		LastFetch: lf, LastRank: jobs.LastRun(ctx, s.DB, "rank"), LastEmail: jobs.LastRun(ctx, s.DB, "email"),
 		Activity: jobs.Current.State(), UpdatedAgo: runAgo(lf),
+		Owner: owner, Viewers: len(s.viewers(ctx)),
 	}
 	if lf != nil {
 		ts := lf.Started
@@ -101,7 +105,7 @@ func (s *Server) HandleAdminJobs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) HandleAdminJobsReport(w http.ResponseWriter, r *http.Request) {
-	if !s.requireAuth(w, r) {
+	if ok, _ := s.requireViewer(w, r); !ok {
 		return
 	}
 	text, _ := jobs.BuildReport(r.Context(), s.DB, s.siteURL())
@@ -111,7 +115,7 @@ func (s *Server) HandleAdminJobsReport(w http.ResponseWriter, r *http.Request) {
 
 // HandleAdminJobsStatus reports the running background job as JSON (polled by radar.js).
 func (s *Server) HandleAdminJobsStatus(w http.ResponseWriter, r *http.Request) {
-	if !s.requireAuth(w, r) {
+	if ok, _ := s.requireViewer(w, r); !ok {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
