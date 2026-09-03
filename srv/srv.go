@@ -325,7 +325,7 @@ func (s *Server) HandleTrackClick(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) renderTemplate(w http.ResponseWriter, name string, data any) error {
 	path := filepath.Join(s.TemplatesDir, name)
-	tmpl, err := template.ParseFiles(path)
+	tmpl, err := template.New(name).Funcs(template.FuncMap{"runAgo": runAgo}).ParseFiles(path)
 	if err != nil {
 		return fmt.Errorf("parse template %q: %w", name, err)
 	}
@@ -631,6 +631,7 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("POST /admin/delete/{id}", s.HandleAdminDelete)
 	mux.HandleFunc("GET /admin/jobs", s.HandleAdminJobs)
 	mux.HandleFunc("GET /admin/jobs/report.txt", s.HandleAdminJobsReport)
+	mux.HandleFunc("GET /admin/jobs/status.json", s.HandleAdminJobsStatus)
 	mux.HandleFunc("POST /admin/jobs/fetch", s.HandleAdminJobsFetch)
 	mux.HandleFunc("POST /admin/jobs/rank", s.HandleAdminJobsRank)
 	mux.HandleFunc("POST /admin/jobs/email", s.HandleAdminJobsEmail)

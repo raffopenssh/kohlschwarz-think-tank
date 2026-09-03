@@ -2,8 +2,11 @@ package srv
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -36,6 +39,22 @@ type jobsPage struct {
 	Msg        string
 	ShowHidden bool
 	Model      string
+	LastFetch  *jobs.Run
+	LastRank   *jobs.Run
+	LastEmail  *jobs.Run
+	Activity   jobs.ActivityState
+	Updated    string // last fetch finished, e.g. "2026-09-03 04:00 UTC"
+	UpdatedAgo string
+}
+
+func runAgo(r *jobs.Run) string {
+	if r == nil {
+		return ""
+	}
+	if r.Finished != nil {
+		return jobs.Ago(*r.Finished)
+	}
+	return jobs.Ago(r.Started)
 }
 
 func (s *Server) HandleAdminJobs(w http.ResponseWriter, r *http.Request) {
@@ -57,10 +76,23 @@ func (s *Server) HandleAdminJobs(w http.ResponseWriter, r *http.Request) {
 	}
 	rows = jobs.Dedupe(rows)
 	cost := jobs.GetCost(ctx, s.DB)
+	lf := jobs.LastRun(ctx, s.DB, "fetch")
 	data := jobsPage{
 		Hostname: s.Hostname, Rows: rows, Runs: runs, Cost: cost, CostLine: cost.CostLine(),
 		Budget: "$" + strconv.FormatFloat(jobs.MaxMonthUSD(), 'f', 2, 64), MinScore: jobs.ReportMinScore,
 		Sources: len(jobs.Sources), Unranked: unranked, Msg: r.URL.Query().Get("msg"), ShowHidden: showHidden, Model: jobs.Model,
+		LastFetch: lf, LastRank: jobs.LastRun(ctx, s.DB, "rank"), LastEmail: jobs.LastRun(ctx, s.DB, "email"),
+		Activity: jobs.Current.State(), UpdatedAgo: runAgo(lf),
+	}
+	if lf != nil {
+		ts := lf.Started
+		if lf.Finished != nil {
+			ts = *lf.Finished
+		}
+		if len(ts) >= 16 {
+			ts = ts[:16]
+		}
+		data.Updated = ts + " UTC"
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderTemplate(w, "jobs.html", data); err != nil {
@@ -77,38 +109,68 @@ func (s *Server) HandleAdminJobsReport(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(text))
 }
 
+// HandleAdminJobsStatus reports the running background job as JSON (polled by radar.js).
+func (s *Server) HandleAdminJobsStatus(w http.ResponseWriter, r *http.Request) {
+	if !s.requireAuth(w, r) {
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	json.NewEncoder(w).Encode(jobs.Current.State())
+}
+
+// startBackground kicks off fn under the single activity slot and redirects back
+// to the list, which shows a live "updating" indicator until fn finishes.
+func (s *Server) startBackground(w http.ResponseWriter, r *http.Request, kind string, timeout time.Duration, fn func(ctx context.Context) string) {
+	if !jobs.Current.Start(kind) {
+		st := jobs.Current.State()
+		http.Redirect(w, r, "/admin/jobs?msg="+url.QueryEscape("busy: "+st.Running+" already running"), http.StatusSeeOther)
+		return
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		defer func() {
+			if p := recover(); p != nil {
+				slog.Error("jobs background panic", "kind", kind, "panic", p)
+				jobs.Current.Finish(kind + " crashed")
+			}
+		}()
+		jobs.Current.Finish(fn(ctx))
+	}()
+	http.Redirect(w, r, "/admin/jobs", http.StatusSeeOther)
+}
+
 func (s *Server) HandleAdminJobsFetch(w http.ResponseWriter, r *http.Request) {
 	if !s.requireAuth(w, r) {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-	run := jobs.FetchAll(ctx, s.DB)
-	http.Redirect(w, r, "/admin/jobs?msg="+strconv.Quote(strings.TrimSpace("fetched: "+strconv.FormatInt(run.Found, 10)+" scanned, "+strconv.FormatInt(run.Matched, 10)+" matched, "+strconv.FormatInt(run.NewCount, 10)+" new, "+strconv.FormatInt(run.SourcesErr, 10)+" sources failed")), http.StatusSeeOther)
+	s.startBackground(w, r, "fetch", 10*time.Minute, func(ctx context.Context) string {
+		run := jobs.FetchAll(ctx, s.DB)
+		return fmt.Sprintf("fetched: %d scanned, %d matched, %d new, %d sources failed", run.Found, run.Matched, run.NewCount, run.SourcesErr)
+	})
 }
 
 func (s *Server) HandleAdminJobsRank(w http.ResponseWriter, r *http.Request) {
 	if !s.requireAuth(w, r) {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-	run := jobs.RankPending(ctx, s.DB, 200)
-	http.Redirect(w, r, "/admin/jobs?msg="+strconv.Quote("ranked "+strconv.FormatInt(run.Ranked, 10)+" postings, cost $"+strconv.FormatFloat(run.CostUSD, 'f', 4, 64)), http.StatusSeeOther)
+	s.startBackground(w, r, "rank", 10*time.Minute, func(ctx context.Context) string {
+		run := jobs.RankPending(ctx, s.DB, 200)
+		return fmt.Sprintf("ranked %d postings, cost $%.4f", run.Ranked, run.CostUSD)
+	})
 }
 
 func (s *Server) HandleAdminJobsEmail(w http.ResponseWriter, r *http.Request) {
 	if !s.requireAuth(w, r) {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-	_, err := jobs.WeeklyReport(ctx, s.DB, adminEmail(), s.siteURL(), true)
-	msg := "email sent to " + adminEmail()
-	if err != nil {
-		msg = "email failed: " + err.Error()
-	}
-	http.Redirect(w, r, "/admin/jobs?msg="+strconv.Quote(msg), http.StatusSeeOther)
+	s.startBackground(w, r, "email", 2*time.Minute, func(ctx context.Context) string {
+		if _, err := jobs.WeeklyReport(ctx, s.DB, adminEmail(), s.siteURL(), true); err != nil {
+			return "email failed: " + err.Error()
+		}
+		return "email sent to " + adminEmail()
+	})
 }
 
 func (s *Server) HandleAdminJobsHide(w http.ResponseWriter, r *http.Request) {

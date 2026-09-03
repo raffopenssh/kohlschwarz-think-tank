@@ -273,11 +273,21 @@ func Scheduler(ctx context.Context, db *sql.DB, to, siteURL string) {
 			return
 		case <-time.After(time.Until(nextDaily)):
 		}
-		FetchAll(ctx, db)
+		if !Current.Start("fetch") {
+			continue
+		}
+		r := FetchAll(ctx, db)
+		Current.Finish(fmt.Sprintf("scheduled fetch: %d new", r.NewCount))
 		if time.Now().UTC().Weekday() == time.Monday {
-			RankPending(ctx, db, 200)
-			if _, err := WeeklyReport(ctx, db, to, siteURL, false); err != nil {
-				slog.Warn("jobs weekly report", "error", err)
+			if Current.Start("rank") {
+				RankPending(ctx, db, 200)
+				Current.Finish("scheduled rank")
+			}
+			if Current.Start("email") {
+				if _, err := WeeklyReport(ctx, db, to, siteURL, false); err != nil {
+					slog.Warn("jobs weekly report", "error", err)
+				}
+				Current.Finish("scheduled email")
 			}
 		}
 	}

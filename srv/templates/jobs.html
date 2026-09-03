@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Park leadership radar · admin</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/static/radar.css?v=2">
+<link rel="stylesheet" href="/static/radar.css?v=3">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -19,13 +19,18 @@
 <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
 <symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
 <symbol id="i-rss" viewBox="0 0 24 24"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></symbol>
+<symbol id="i-spin" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></symbol>
 </svg>
 
 <p class="top"><a href="/admin">← admin</a> · <a href="/admin/funding">funding radar</a> · <a href="/">site</a></p>
 <h1>Park leadership radar</h1>
 <p class="lead">National park director / manager roles &amp; high-level PA consultancies · Austria · Sub-Saharan Africa · global/EU · EN/DE/FR · {{.Sources}} sources · weekly fetch+rank+email (Mon 04:00 UTC), daily fetch.</p>
-{{if .Msg}}<p class="msg">{{.Msg}}</p>{{end}}
-<div class="bar">
+<p class="status" id="status" data-running="{{.Activity.Running}}" data-since="{{.Activity.Since}}" data-done="{{.Activity.Done}}">
+  <span class="live" id="live"{{if not .Activity.Running}} hidden{{end}}><svg class="i spin"><use href="#i-spin"/></svg><span id="live-text">{{if .Activity.Running}}{{.Activity.Running}}ing…{{end}}</span></span>
+  <span class="upd" id="upd"{{if .Activity.Running}} hidden{{end}}>{{if .Updated}}<svg class="i"><use href="#i-clock"/></svg>updated <time datetime="{{.Updated}}" title="{{.Updated}}">{{.UpdatedAgo}}</time>{{if .LastFetch}} · {{.LastFetch.NewCount}} new{{if .LastFetch.SourcesErr}} · <span class="warn">{{.LastFetch.SourcesErr}} sources failed</span>{{end}}{{end}}{{if .LastRank}} · ranked {{runAgo .LastRank}}{{end}}{{if .LastEmail}} · emailed {{runAgo .LastEmail}}{{end}}{{else}}never fetched{{end}}</span>
+</p>
+{{if .Msg}}<p class="msg">{{.Msg}}</p>{{end}}{{if and .Activity.Last (not .Msg) (not .Activity.Running)}}<p class="msg" id="lastmsg">{{.Activity.Last}}</p>{{end}}
+<div class="bar" id="bar">
 <form method="post" action="/admin/jobs/fetch"><button><svg class="i"><use href="#i-rss"/></svg>fetch now</button></form>
 <form method="post" action="/admin/jobs/rank"><button>rank {{.Unranked}} unranked</button></form>
 <form method="post" action="/admin/jobs/email"><button><svg class="i"><use href="#i-mail"/></svg>email report</button></form>
@@ -60,7 +65,7 @@
   {{if .Why}}<div class="line why"><svg class="i"><use href="#i-arrow"/></svg><span>{{.Why}}</span></div>{{end}}
   <button class="tog" type="button" aria-expanded="false"><svg class="i"><use href="#i-chev"/></svg><span class="open">details</span><span class="close">less</span></button>
   <div class="more">
-    <div class="line"><svg class="i"><use href="#i-clock"/></svg><span>since <b>{{.Since}}</b> · via {{.Source}}{{if .Dupes}} · +{{.Dupes}} copies{{end}}</span></div>
+    <div class="line"><svg class="i"><use href="#i-clock"/></svg><span>since <b>{{.Since}}</b> · last seen <b title="{{.LastSeen}} UTC">{{.SeenAgo}}</b> · via {{.Source}}{{if .Dupes}} · +{{.Dupes}} {{if eq .Dupes 1}}copy{{else}}copies{{end}} merged{{end}}</span></div>
     <div class="actions"><form method="post" action="/admin/jobs/hide/{{.ID}}">{{if .Hidden}}<input type="hidden" name="unhide" value="1"><button class="ghost"><svg class="i"><use href="#i-eye"/></svg>unhide</button>{{else}}<button class="ghost"><svg class="i"><use href="#i-eyeoff"/></svg>hide</button>{{end}}</form></div>
   </div>
 </article>
@@ -74,6 +79,6 @@
 <details><summary>log</summary><pre>{{.Log}}</pre></details></div>
 {{end}}
 </div>
-<script src="/static/radar.js?v=1"></script>
+<script src="/static/radar.js?v=2"></script>
 </body>
 </html>

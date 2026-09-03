@@ -34,3 +34,32 @@
   var q=new URLSearchParams(location.search).get('f');
   apply(q&&bs.some(function(b){return b.dataset.f===q;})?q:'');
 })();
+
+// live "updating" indicator for /admin/jobs: poll status.json while a job runs, reload when done.
+(function(){
+  var st=document.getElementById('status');if(!st)return;
+  var live=document.getElementById('live'),txt=document.getElementById('live-text'),upd=document.getElementById('upd');
+  var running=st.dataset.running||'';
+  function show(kind,since){
+    running=kind;document.body.classList.toggle('busy',!!kind);
+    live.hidden=!kind;upd.hidden=!!kind;
+    if(kind){var s=since?Math.max(0,Math.round(Date.now()/1000-since)):0;txt.textContent=kind+'ing…'+(s>=5?' '+(s<60?s+'s':Math.round(s/60)+' min'):'');}
+  }
+  var wasRunning=!!running;
+  show(running,+st.dataset.since||0);
+  var delay=wasRunning?2000:15000,timer;
+  function poll(){
+    fetch('/admin/jobs/status.json',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+      if(j.running){wasRunning=true;delay=2000;show(j.running,j.since);}
+      else if(wasRunning){location.replace(location.pathname+(location.search||'')+location.hash);return;}
+      else{delay=Math.min(delay*2,60000);}
+      timer=setTimeout(poll,delay);
+    }).catch(function(){timer=setTimeout(poll,10000);});
+  }
+  timer=setTimeout(poll,delay);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden){clearTimeout(timer);poll();}});
+  // clicking a bar button: show indicator immediately (before redirect lands)
+  var bar=document.getElementById('bar');if(bar)bar.addEventListener('submit',function(e){
+    var a=(e.target.getAttribute('action')||'').split('/').pop();show(a,Math.round(Date.now()/1000));
+  });
+})();

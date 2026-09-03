@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -40,6 +39,17 @@ func (r Row) Since() string {
 	}
 	return r.FirstSeen
 }
+
+// LastSeenDate renders LastSeen as a date.
+func (r Row) LastSeenDate() string {
+	if len(r.LastSeen) >= 10 {
+		return r.LastSeen[:10]
+	}
+	return r.LastSeen
+}
+
+// SeenAgo renders LastSeen relative to now.
+func (r Row) SeenAgo() string { return Ago(r.LastSeen) }
 
 // ScoreVal returns the score or -1.
 func (r Row) ScoreVal() int64 {
@@ -100,38 +110,6 @@ func List(ctx context.Context, db *sql.DB, includeHidden bool, limit int) ([]Row
 		return nil, err
 	}
 	return scanRows(rows)
-}
-
-// DedupeKey collapses the same job posted under several URLs (LinkedIn per-country
-// copies, EN/FR duplicates on the same careers page) to one key.
-func DedupeKey(r Row) string {
-	t := strings.ToLower(r.Title)
-	t = nonAlnum.ReplaceAllString(t, " ")
-	t = strings.Join(strings.Fields(t), " ")
-	o := strings.ToLower(strings.Join(strings.Fields(nonAlnum.ReplaceAllString(r.Org, " ")), " "))
-	return o + "|" + t
-}
-
-var nonAlnum = regexp.MustCompile(`[^\p{L}\p{N}]+`)
-
-// Dedupe keeps the first (best-ranked, as List orders by score) row per DedupeKey
-// and records how many copies it stands for in Dupes.
-func Dedupe(rows []Row) []Row {
-	seen := map[string]int{}
-	var out []Row
-	for _, r := range rows {
-		k := DedupeKey(r)
-		if i, ok := seen[k]; ok {
-			out[i].Dupes++
-			if r.FirstSeen < out[i].FirstSeen {
-				out[i].FirstSeen = r.FirstSeen
-			}
-			continue
-		}
-		seen[k] = len(out)
-		out = append(out, r)
-	}
-	return out
 }
 
 // Unranked returns postings not yet scored.
