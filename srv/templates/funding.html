@@ -2,50 +2,81 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Funding radar · admin</title>
 <meta name="robots" content="noindex">
-<style>
-body{font:14px/1.45 ui-monospace,Menlo,Consolas,monospace;max-width:1040px;margin:2rem auto;padding:0 1rem;color:#222;background:#fff}
-a{color:#0645ad}h1,h2{font-size:1.1em;margin:1.4em 0 .4em}
-.row{padding:.55em 0;border-top:1px solid #ddd}.row.soon{background:#fff6e0}.row.done{opacity:.55}
-.s{display:inline-block;min-width:2.2em;font-weight:bold}.s90{color:#0a7}.s70{color:#170}.s40{color:#960}.s0{color:#999}
-.meta{color:#666}.why{color:#444}.el{color:#555;font-size:12.5px}
-form{display:inline}select,input,button{font:inherit;font-size:12px;padding:.1em .3em}
-.msg{background:#eef;padding:.4em .6em}.dim{color:#999}.tag{background:#eee;padding:0 .35em;border-radius:3px;font-size:12px}
-.dl{font-weight:bold}.dl.soon{color:#c60}.dl.past{color:#999;text-decoration:line-through}
-.legend{font-size:12px;color:#666}
-</style>
+<link rel="stylesheet" href="/static/radar.css?v=2">
 </head>
 <body>
-<p><a href="/admin">← admin</a> · <a href="/admin/jobs">jobs radar</a> · <a href="/">site</a></p>
-<h1>Funding radar — Veridical Earth / kohlschwarz.at apps</h1>
-<p class="meta">Grants · prizes · accelerators · investors. Hand-curated &amp; hand-scored once (2026-09-03), no LLM, €0/month. Score = suitability <em>now</em> (solo founder, no entity, Vienna + CAR). Deadlines ≤ 60 days for score ≥ 40 are appended to the Monday radar email. Status is yours to edit.</p>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-cal" viewBox="0 0 24 24"><path d="M8 2v4M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol>
+<symbol id="i-coins" viewBox="0 0 24 24"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18M7 6h1v4M16.71 13.88l.7.71-2.82 2.82"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+<symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/></symbol>
+</svg>
+
+<p class="top"><a href="/admin">← admin</a> · <a href="/admin/jobs">jobs radar</a> · <a href="/">site</a></p>
+<h1>Funding radar</h1>
+<p class="lead">Grants · prizes · accelerators · investors for Veridical Earth / kohlschwarz.at apps. Hand-curated &amp; hand-scored (2026-09-03), no LLM, €0/month. Score = suitability <em>now</em> (solo founder, no entity, Vienna + CAR). Deadlines ≤ 60 days for score ≥ 40 go into the Monday radar email.</p>
 {{if .Msg}}<p class="msg">{{.Msg}}</p>{{end}}
-<p><form method="post" action="/admin/funding/reseed"><button>reseed from code</button></form> <span class="legend">(refreshes curated fields, keeps your status/notes)</span></p>
+<div class="bar"><form method="post" action="/admin/funding/reseed"><button><svg class="i"><use href="#i-refresh"/></svg>reseed from code</button></form> <span class="tiny">refreshes curated fields, keeps your status/notes</span></div>
 
 {{if .Upcoming}}
-<h2>Due in the next 60 days</h2>
-{{range .Upcoming}}<div class="row soon"><span class="dl soon">{{.Deadline}}</span> ({{.DaysLeft}}d) · <span class="s">[{{.Score}}]</span> <a href="{{.URL}}" target="_blank" rel="noopener">{{.Name}}</a> — {{.Amount}}{{if ne .Status "open"}} · <span class="tag">{{.Status}}</span>{{end}}</div>{{end}}
+<h2>Due in the next 60 days <span class="n">{{len .Upcoming}}</span></h2>
+{{range .Upcoming}}
+<a class="upc" href="#f{{.ID}}">
+  <span class="when">{{.DaysLeft}}d<small>{{.Deadline}}</small></span>
+  <span class="what"><b>{{.Name}}</b> <span class="tag">{{.Score}}</span>{{if ne .Status "open"}} <span class="tag status {{.Status}}">{{.Status}}</span>{{end}}<span class="amt">{{.Amount}}</span></span>
+</a>
+{{end}}
 {{end}}
 
-<h2>All ({{len .Rows}})</h2>
-<p class="legend">tracks: at = Austria · eu · space · conservation · africa · prize · program (credits/data) · vc</p>
-{{range .Rows}}
-<div class="row{{if or (eq .Status "skip") (eq .Status "rejected") (eq .Status "won")}} done{{end}}" id="f{{.ID}}">
-  {{$sc := .Score}}<span class="s {{if ge $sc 80}}s90{{else if ge $sc 60}}s70{{else if ge $sc 35}}s40{{else}}s0{{end}}">{{$sc}}</span>
-  <a href="{{.URL}}" target="_blank" rel="noopener"><b>{{.Name}}</b></a>
-  <span class="tag">{{.Kind}}</span> <span class="tag">{{.Track}}</span>
-  {{if ne .Status "open"}}<span class="tag">{{.Status}}</span>{{end}}
-  <br><span class="meta">💰 {{.Amount}} · 📅 <span class="dl{{if .Expired}} past{{else if and (ne .Deadline "") (le .DaysLeft 60)}} soon{{end}}">{{.DL}}</span></span>
-  {{if .Eligibility}}<br><span class="el">✓ {{.Eligibility}}</span>{{end}}
-  {{if .Note}}<br><span class="why">→ {{.Note}}</span>{{end}}
-  {{if .Why}}<br><span class="meta">score: {{.Why}}</span>{{end}}
-  <br><form method="post" action="/admin/funding/status/{{.ID}}">
-    {{$cur := .Status}}<select name="status">{{range $.Statuses}}<option value="{{.}}"{{if eq . $cur}} selected{{end}}>{{.}}</option>{{end}}</select>
-    <input name="note" value="{{.UserNote}}" placeholder="your note" size="50">
-    <button>save</button>
-  </form>
+<h2>All <span class="n">{{len .Rows}}</span></h2>
+<div class="filters" id="filters">
+<button aria-pressed="true" data-f="">all</button>
+<button data-f="open">open</button>
+<button data-f="soon">due ≤ 60d</button>
+<button data-f="top">score ≥ 70</button>
+<button data-f="at">austria</button>
+<button data-f="eu">eu</button>
+<button data-f="space">space</button>
+<button data-f="conservation">conservation</button>
+<button data-f="africa">africa</button>
+<button data-f="prize">prize</button>
+<button data-f="program">program</button>
+<button data-f="vc">vc</button>
+<span class="count" id="count"></span>
 </div>
+<div class="list">
+{{range .Rows}}{{$sc := .Score}}{{$dl := .DaysLeft}}
+<article class="card{{if or (eq .Status "skip") (eq .Status "rejected") (eq .Status "won")}} done{{end}}" id="f{{.ID}}" data-score="{{$sc}}" data-track="{{.Track}}" data-kind="{{.Kind}}" data-status="{{.Status}}" data-soon="{{if and (ne .Deadline "") (not .Expired) (le $dl 60)}}1{{end}}">
+  <span class="score {{if ge $sc 80}}s90{{else if ge $sc 60}}s70{{else if ge $sc 35}}s40{{else}}s0{{end}}">{{$sc}}</span>
+  <a class="title" href="{{.URL}}" target="_blank" rel="noopener">{{.Name}}<svg class="i"><use href="#i-ext"/></svg></a>
+  <div class="tags">
+    <span class="tag">{{.Kind}}</span><span class="tag">{{.Track}}</span>
+    {{if ne .Status "open"}}<span class="tag status {{.Status}}">{{.Status}}</span>{{end}}
+    {{if and (ne .Deadline "") (not .Expired) (le $dl 60)}}<span class="tag soon"><svg class="i"><use href="#i-cal"/></svg> {{$dl}}d left</span>{{end}}
+  </div>
+  <div class="line"><svg class="i"><use href="#i-coins"/></svg><span>{{.Amount}}</span></div>
+  <div class="line dl{{if .Expired}} past{{else if and (ne .Deadline "") (le $dl 60)}} soon{{end}}"><svg class="i"><use href="#i-cal"/></svg><span>{{.DL}}</span></div>
+  {{if .Note}}<div class="line why"><svg class="i"><use href="#i-arrow"/></svg><span>{{.Note}}</span></div>{{end}}
+  <button class="tog" type="button" aria-expanded="false"><svg class="i"><use href="#i-chev"/></svg><span class="open">eligibility, score &amp; status</span><span class="close">less</span></button>
+  <div class="more">
+    {{if .Eligibility}}<div class="line el"><svg class="i"><use href="#i-check"/></svg><span>{{.Eligibility}}</span></div>{{end}}
+    {{if .Why}}<div class="line sc"><svg class="i"><use href="#i-target"/></svg><span>{{.Why}}</span></div>{{end}}
+    <div class="actions"><form method="post" action="/admin/funding/status/{{.ID}}">
+      {{$cur := .Status}}<select name="status" aria-label="status">{{range $.Statuses}}<option value="{{.}}"{{if eq . $cur}} selected{{end}}>{{.}}</option>{{end}}</select>
+      <input name="note" value="{{.UserNote}}" placeholder="your note">
+      <button>save</button>
+    </form></div>
+  </div>
+</article>
 {{end}}
+</div>
+<script src="/static/radar.js?v=1"></script>
 </body>
 </html>
