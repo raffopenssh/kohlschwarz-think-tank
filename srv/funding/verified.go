@@ -30,7 +30,7 @@ var Verified = map[string]override{
 	// ---- WATCH: not open now, fits ----
 	"aws-first-incubator":   {75, "", "2026 call #2 closed 23 Jun; next ~Q1–Q2 2027; company must be <6 months old", "Great fit for 2027 – do NOT found a company too early."},
 	"netidee":               {70, "", "call 21 closed 7 Jul 2026; next 'noch nicht fixiert' → expect ~Mar 2027; results must be open source", "€60k for open-source kohlschwarz.at tools."},
-	"ffg-impact-innovation": {60, "", "2026 closed 12 Mar; next ~Q1 2027 (FFG site blocks bots – verify manually)", "Individuals eligible; co-design with a Land/park authority."},
+	"ffg-impact-innovation": {55, "", "NOT in FFG open list (3 Sep 2026); 2026 closed 12 Mar; next ~Q1 2027", "Individuals eligible; co-design with a Land/park authority."},
 	"climatelaunchpad-at":   {60, "", "2026 closed 30 Mar; 2027 intake ~Feb 2027 (Thinkubator Vienna)", "Free pitch training, no entity."},
 	"greenstart":            {50, "", "no 2026/27 call published; not in Klimafonds 2026 programme press release – may be paused; if it runs: opens ~Dec, deadline ~Feb", "Only if programme continues."},
 	"wildlabs-awards":       {65, "", "2026 EOI closed 18 Mar; 2027 EOI ~Jan–Mar 2027; two-stage; Arm-based hardware/tech mandatory", "$10k tier can go to individuals; need an Arm angle (edge devices in parks)."},
@@ -39,7 +39,7 @@ var Verified = map[string]override{
 	"oxford-open-seed-fund": {35, "", "2026-27 rounds ~Nov 2026 / Feb 2027; Oxford researcher must apply, he'd be Policy Partner", "Needs a WildCRU PI to front it."},
 	"oui-startup-incubator": {35, "", "rolling; cohorts Oct–Mar; Phase 2 £10k for 5%; must plan UK/US incorporation + Oxford presence", "Marginal."},
 	"esa-bass-kickstart":    {55, "2026-10-30", "open call batch cut-off 30 Oct 2026 (needs legal entity + FFG/ALR authorisation); now under ESA ACCESS", "€75k at 75% – reachable only if e.U./GmbH exists by Oct."},
-	"ffg-asap":              {60, "", "no 2026 call published as of Sep 2026 (FFG blocks bots – check ffg.at/ausschreibungen); needs entity", "Best thematic fit in AT once incorporated."},
+	"ffg-asap":              {50, "", "NOT in FFG open list (3 Sep 2026) – no ASAP/Weltraum call open; check FFG 'geplant' list / newsletter", "Best thematic fit once a call opens; needs entity."},
 	"cassini-accelerator":   {30, "2026-10-02", "Batch 8 closes 2 Oct 2026 – ineligible (SME with sales); Batch 9 opens ~mid-Jan 2027", "Only after entity + first revenue."},
 	"eic-accelerator":       {25, "2026-11-04", "full-app cut-off 4 Nov 2026; natural persons 'willing to set up an SME' may apply", "TRL6+ and team required; not now."},
 	"echoing-green":         {45, "", "typically opens ~Oct/Nov, closes ~Dec/Jan; no entity needed at application", "Possible but not core fit (Vienna founder serving CAR)."},
@@ -59,6 +59,11 @@ var Verified = map[string]override{
 	"eu-mission-adaptation": {10, "2026-09-23", "23 Sep 2026 – unreachable", "2027 WP only."},
 	"natgeo-grants":         {20, "", "RFP-only now; current RFP (Okavango, 23 Sep) irrelevant", "Monitor for a tech RFP."},
 	"whitley":               {25, "2026-10-31", "31 Oct 2026 – nominate a CAR partner, not yourself", "Indirect."},
+
+	"ffg-eureka-resilienz": {35, "2026-10-26", "FFG open list: Eureka 'Katastrophenresilienz und Wiederaufbau 2026', 10 Jun–26 Oct 2026; ≥2 companies from 2 Eureka countries; max €3m AT share", "Direct thematic hit (flood/fire/drought) – needs entity + foreign partner; watch for 2027 edition."},
+	"ffg-oeko-scheck":      {30, "2026-10-05", "FFG open list: Öko-Scheck 2026, 1 Sep–5 Oct 2026; €12k voucher; KMU or gemeinnützige Org", "Only if an entity/Verein exists by early Oct."},
+	"ffg-markt-einstieg":   {25, "2026-12-31", "FFG open list: Markt.Einstieg 2026, rolling; max €120k commercialisation; typically after a completed FFG project", "Sequence after Kleinprojekt."},
+	"he-cl6-governance":    {20, "2026-11-26", "FFG open list: HORIZON-CL6-2026-04 GOVERNANCE single stage 25 Aug–26 Nov 2026 (two-stage Call 03 closes 30 Sep); EO + digital governance", "Closest Horizon topic – partner-only via TU Wien GEO/BOKU/GeoSphere."},
 
 	// ---- DROP ----
 	"biopama-ac":                {0, "", "programme closed at IUCN Congress 2025 – dead", "Dead."},
@@ -81,9 +86,9 @@ var Verified = map[string]override{
 	"digital-europe-genai-pa":   {0, "", "closed 3 Mar 2026; no follow-up topic", "Dead."},
 	"seraphim-space":            {0, "", "applications closed; TRL5+ incorporated spacetech", "Too early."},
 	"esa-incubed":               {0, "", "companies with matching funds", "Too early."},
-	"ffg-kiras":                 {0, "", "consortium + public Bedarfsträger + entity", "Not now."},
-	"ffg-innovationsscheck":     {0, "", "SME entity required", "After founding."},
-	"ffg-ai-for-green":          {0, "", "no open call; consortia", "Drop."},
+	"ffg-kiras":                 {0, "", "NOT in FFG open list (3 Sep 2026); consortium + Bedarfsträger + entity", "Not now."},
+	"ffg-innovationsscheck":     {45, "2026-11-02", "FFG open list: open until 2 Nov 2026; €10k voucher (20% Selbstbehalt) for work bought from TU Wien GEO/BOKU/GeoSphere", "Cheap way to formalise a research partner – needs KMU entity."},
+	"ffg-ai-for-green":          {15, "2026-10-06", "no 'AI for Green' call; nearest: FFG 'AI Ökosysteme 2026 – Hybrid AI & Green AI', 18 May–6 Oct 2026, max €1m, consortia", "Partner-only in a TU Wien/BOKU consortium."},
 	"ams-ugp":                   {0, "", "only for registered unemployed; excludes Gründungsstipendium; URL dead", "N/A."},
 	"uniqa-ventures":            {0, "", "redirects to uniqagroup.com; insurance-strategic", "Drop."},
 	"vig":                       {0, "", "URL 404; insurer strategic", "Drop."},
@@ -94,8 +99,8 @@ var Verified = map[string]override{
 	"esri-startup":              {20, "", "incorporated software company <5 yrs", "After founding."},
 	"wa-innovation":             {30, "2026-12-31", "cut-off 31 Dec 2026; needs SME + 55% own financing", "After GmbH."},
 	"wa-lebensqualitaet":        {20, "2026-12-31", "needs entity + co-financing", "After GmbH."},
-	"ffg-kleinprojekt":          {30, "2026-12-31", "needs entity + co-financing", "After GmbH."},
-	"ffg-basisprogramm":         {20, "2026-12-31", "companies in formation, TRL5–8, financing plan", "Too heavy."},
+	"ffg-kleinprojekt":          {55, "2026-12-31", "FFG open list 3 Sep 2026: rolling to 31 Dec 2026; max €88,500; startups 'in Gründung' explicitly eligible (entity by contract)", "First FFG step once e.U./GmbH exists – fund the Veridical Earth MVP as R&D."},
+	"ffg-basisprogramm":         {25, "2026-12-31", "FFG open list: rolling to 31 Dec 2026; max €3m grant+loan", "Follow-on after Kleinprojekt."},
 	"accent":                    {45, "2026-09-29", "next selection ~29 Sep 2026 (unverified); Lower Austria base required – but that is also the ESA BIC route", "Consider together with ESA BIC Austria."},
 	"aws-preseed-deeptech":      {35, "", "rolling; needs IP-protectable tech leap + ≥€5m financing plausibility", "aws will steer this to Innovative Solutions."},
 }

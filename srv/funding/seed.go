@@ -6,6 +6,11 @@ package funding
 // Deadlines: ISO when confirmed; otherwise DeadlineNote carries the cycle + "verify".
 // Re-seed via /admin/funding → "reseed" (keeps status & user notes).
 var Seeds = []Entry{
+	// ---------- FFG open list 3 Sep 2026 (added after manual review) ----------
+	{Key: "ffg-eureka-resilienz", Name: "FFG / Eureka – Katastrophenresilienz und Wiederaufbau 2026", URL: "https://www.ffg.at/ausschreibungen", Kind: "grant", Track: "at", Amount: "max €3m AT share; transnational R&D", Eligibility: "≥2 independent companies from different Eureka countries; entity required.", Note: "Flood/fire/drought resilience – exactly Veridical Earth. Needs a foreign company partner.", Score: 35},
+	{Key: "ffg-oeko-scheck", Name: "FFG Öko-Scheck 2026", URL: "https://www.ffg.at/ausschreibungen", Kind: "grant", Track: "at", Amount: "€12k voucher", Eligibility: "KMU or gemeinnützige Organisation.", Note: "Climate/environment innovation voucher.", Score: 30},
+	{Key: "ffg-markt-einstieg", Name: "FFG Markt.Einstieg 2026", URL: "https://www.ffg.at/ausschreibungen", Kind: "grant", Track: "at", Amount: "max €120k (de minimis)", Eligibility: "KMU; usually after a completed FFG-funded project.", Note: "Commercialisation of groundwater/LIDAR apps later.", Score: 25},
+	{Key: "he-cl6-governance", Name: "Horizon Europe Cluster 6 – GOVERNANCE (EO & digital solutions) 2026", URL: "https://www.ffg.at/ausschreibungen", Kind: "grant", Track: "eu", Amount: "RIA/IA consortium, several €m", Eligibility: "≥3 legal entities from 3 countries.", Note: "Innovative governance, environmental/earth observation and digital solutions – partner role only.", Score: 20},
 	// ---------- Austria: pre-company cash ----------
 	{Key: "wa-gruendungsstipendium", Name: "Wirtschaftsagentur Wien – Gründungsstipendium", URL: "https://wirtschaftsagentur.at/aktuelle-foerderungen-der-wirtschaftsagentur-wien/foe-gruendungsstipendium/",
 		Kind: "grant", Track: "at", Amount: "€8,000 per founder (max 3), 6 months + coaching", Deadline: "2026-09-15", DeadlineNote: "window 15 Jul–15 Sep 2026; programme ends 31 Dec 2026",
