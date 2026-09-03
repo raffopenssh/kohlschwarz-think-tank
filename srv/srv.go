@@ -17,6 +17,7 @@ import (
 
 	"srv.exe.dev/db"
 	"srv.exe.dev/db/dbgen"
+	"srv.exe.dev/srv/funding"
 	"srv.exe.dev/srv/jobs"
 )
 
@@ -610,6 +611,15 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("POST /admin/jobs/rank", s.HandleAdminJobsRank)
 	mux.HandleFunc("POST /admin/jobs/email", s.HandleAdminJobsEmail)
 	mux.HandleFunc("POST /admin/jobs/hide/{id}", s.HandleAdminJobsHide)
+	mux.HandleFunc("GET /admin/funding", s.HandleAdminFunding)
+	mux.HandleFunc("POST /admin/funding/status/{id}", s.HandleAdminFundingStatus)
+	mux.HandleFunc("POST /admin/funding/reseed", s.HandleAdminFundingReseed)
+	if _, err := funding.Seed(context.Background(), s.DB); err != nil {
+		slog.Warn("funding seed", "error", err)
+	}
+	jobs.ReportExtra = func(ctx context.Context) (string, bool) {
+		return funding.ReportSection(ctx, s.DB, s.siteURL(), 60, 40)
+	}
 	go jobs.Scheduler(context.Background(), s.DB, adminEmail(), s.siteURL())
 	mux.HandleFunc("GET /llm.txt", s.HandleLLMTxt)
 	mux.HandleFunc("GET /api/apps", s.HandleAPIApps)

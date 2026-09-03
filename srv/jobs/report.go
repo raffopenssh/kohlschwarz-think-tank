@@ -18,6 +18,11 @@ const emailEndpoint = "http://169.254.169.254/gateway/email/send"
 // ReportMinScore is the threshold for "really interesting".
 const ReportMinScore = 70
 
+// ReportExtra, when set, returns an extra section appended before the footer
+// (used for funding deadlines). Return "" for nothing; urgent=true forces the
+// weekly email even when there are no new job picks.
+var ReportExtra func(ctx context.Context) (text string, urgent bool)
+
 // ReportMax caps the number of new items per weekly email; the best-scoring go first.
 const ReportMax = 10
 
@@ -84,6 +89,12 @@ func BuildReport(ctx context.Context, db *sql.DB, siteURL string) (string, []int
 			fmt.Fprintf(&b, "  · %s — %s%s\n    %s\n", r.Title, orgLoc(r), dl(r), r.URL)
 		}
 		b.WriteString("\n")
+	}
+
+	if ReportExtra != nil {
+		if extra, _ := ReportExtra(ctx); extra != "" {
+			b.WriteString(extra + "\n")
+		}
 	}
 
 	b.WriteString(strings.Repeat("-", 64) + "\n")
@@ -174,7 +185,11 @@ func WeeklyReport(ctx context.Context, db *sql.DB, to, siteURL string, force boo
 	text, ids := BuildReport(ctx, db, siteURL)
 	picks := strings.Count(text, "\n   score ") // one meta line per pick
 	run := Run{Started: time.Now().UTC().Format("2006-01-02 15:04:05"), Kind: "email", NewCount: int64(picks)}
-	if len(ids) == 0 && !force {
+	urgent := false
+	if ReportExtra != nil {
+		_, urgent = ReportExtra(ctx)
+	}
+	if len(ids) == 0 && !force && !urgent {
 		run.Log = "nothing new ≥ " + fmt.Sprint(ReportMinScore) + "; email skipped"
 		insertRun(ctx, db, run)
 		return text, nil
