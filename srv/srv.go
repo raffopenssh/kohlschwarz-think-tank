@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"html"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -126,12 +127,31 @@ func (s *Server) requireAuth(w http.ResponseWriter, r *http.Request) bool {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return false
 	}
-	// Not logged in: bounce through exe.dev login (works on *.exe.xyz and the
-	// custom domain, both served by the exe.dev proxy). Basic auth remains as
-	// an explicit fallback via ?basic=1 or when running without the proxy.
+	// Not logged in: bounce through exe.dev login once (marked with ?li=1).
+	// If we come back still without the header, do NOT redirect again (that
+	// produced ERR_TOO_MANY_REDIRECTS); explain and offer basic auth instead.
 	_, _, hasBasic := r.BasicAuth()
-	if !hasBasic && r.URL.Query().Get("basic") == "" && r.Method == http.MethodGet && r.Header.Get("X-Forwarded-Host") != "" {
-		http.Redirect(w, r, "/__exe.dev/login?redirect="+url.QueryEscape(r.URL.RequestURI()), http.StatusFound)
+	q := r.URL.Query()
+	if !hasBasic && q.Get("basic") == "" && r.Method == http.MethodGet && r.Header.Get("X-Forwarded-Host") != "" {
+		if q.Get("li") == "" {
+			q.Set("li", "1")
+			target := r.URL.Path + "?" + q.Encode()
+			http.Redirect(w, r, "/__exe.dev/login?redirect="+url.QueryEscape(target), http.StatusFound)
+			return false
+		}
+		slog.Warn("admin: exe.dev login returned without identity header",
+			"path", r.URL.Path, "host", r.Header.Get("X-Forwarded-Host"),
+			"exedev_email", r.Header.Get("X-ExeDev-Email"), "exedev_user", r.Header.Get("X-ExeDev-UserID"),
+			"ua", r.UserAgent())
+		q.Del("li")
+		q.Set("basic", "1")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprintf(w, `<!doctype html><meta name=viewport content="width=device-width"><body style="font:16px system-ui;max-width:32em;margin:3em auto;padding:0 1em">
+<h2>Admin login</h2>
+<p>exe.dev login did not carry through to this site (no identity header received — usually the browser blocked the login cookie, or the site is shared publicly).</p>
+<p><a href="%s">Continue with password</a> (user <code>admin</code>) &nbsp;·&nbsp; <a href="/__exe.dev/login?redirect=%s">Retry exe.dev login</a></p>
+</body>`, html.EscapeString(r.URL.Path+"?"+q.Encode()), url.QueryEscape(r.URL.Path))
 		return false
 	}
 	adminPassword := os.Getenv("ADMIN_PASSWORD")
