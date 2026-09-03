@@ -129,10 +129,10 @@ func SetStatus(ctx context.Context, db *sql.DB, id int64, status, note string) e
 // ReportSection renders the block appended to the weekly email: deadlines in the
 // next `days` days for entries scoring >= minScore. Empty when nothing is due.
 // urgent is true when a deadline falls within the next 14 days (forces the email).
-func ReportSection(ctx context.Context, db *sql.DB, siteURL string, days, minScore int) (text string, urgent bool) {
+func ReportSection(ctx context.Context, db *sql.DB, siteURL string, days, minScore int) (text string, urgent bool, lines []string) {
 	up, _ := Upcoming(ctx, db, days, minScore)
 	if len(up) == 0 {
-		return "", false
+		return fmt.Sprintf("FUNDING DEADLINES · none in the next %d days\n\n", days), false, nil
 	}
 	for _, e := range up {
 		if e.Status == "open" && e.DaysLeft() <= 14 {
@@ -140,10 +140,17 @@ func ReportSection(ctx context.Context, db *sql.DB, siteURL string, days, minSco
 		}
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "\nFUNDING DEADLINES · next %d days (%d)\n", days, len(up))
+	fmt.Fprintf(&b, "FUNDING DEADLINES · next %d days (%d)\n%s\n", days, len(up), strings.Repeat("-", 60))
 	for _, e := range up {
-		fmt.Fprintf(&b, "  %s  %-3dd  [%d] %s — %s\n        %s\n", e.Deadline, e.DaysLeft(), e.Score, e.Name, e.Amount, e.URL)
+		flag := ""
+		if e.Status == "applied" {
+			flag = " (applied)"
+		} else if e.DaysLeft() <= 14 {
+			flag = " ‼"
+		}
+		fmt.Fprintf(&b, "  %s · in %2dd · [%d] %s%s — %s\n        %s\n", e.Deadline, e.DaysLeft(), e.Score, e.Name, flag, e.Amount, e.URL)
+		lines = append(lines, fmt.Sprintf("[%d] %s — %s, deadline %s (in %d days, status %s)", e.Score, e.Name, e.Amount, e.Deadline, e.DaysLeft(), e.Status))
 	}
 	fmt.Fprintf(&b, "  full list: %s/admin/funding\n", siteURL)
-	return b.String(), urgent
+	return b.String(), urgent, lines
 }

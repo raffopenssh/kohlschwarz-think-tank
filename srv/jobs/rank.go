@@ -134,42 +134,12 @@ func rankBatch(ctx context.Context, rows []Row) ([]rankResult, int64, int64, err
 		fmt.Fprintf(&sb, "id=%d | %s | org: %s | loc: %s | posted: %s | deadline: %s | src: %s\n  %s\n",
 			r.ID, r.Title, r.Org, r.Location, r.Posted, r.Deadline, r.Source, truncate(r.Snippet, 350))
 	}
-	body, _ := json.Marshal(map[string]any{
-		"model":       Model,
-		"temperature": 0,
-		"max_tokens":  600 + 220*len(rows), // room for reasoning + JSON
-		"messages": []map[string]string{
-			{"role": "system", "content": systemPrompt},
-			{"role": "user", "content": sb.String()},
-		},
-	})
-	req, _ := http.NewRequestWithContext(ctx, "POST", llmURL, bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := (&http.Client{Timeout: 240 * time.Second}).Do(req)
+	content, nIn, nOut, err := chat(ctx, systemPrompt, sb.String(), 600+220*len(rows))
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, nIn, nOut, err
 	}
-	defer resp.Body.Close()
-	b, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
-	var r struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
-		Usage struct {
-			In  int64 `json:"prompt_tokens"`
-			Out int64 `json:"completion_tokens"`
-		} `json:"usage"`
-		Error any `json:"error"`
-	}
-	if err := json.Unmarshal(b, &r); err != nil {
-		return nil, 0, 0, fmt.Errorf("decode (HTTP %d): %.200s", resp.StatusCode, b)
-	}
-	if r.Error != nil || len(r.Choices) == 0 {
-		return nil, r.Usage.In, r.Usage.Out, fmt.Errorf("llm error (HTTP %d): %.300s", resp.StatusCode, b)
-	}
-	content := r.Choices[0].Message.Content
+	r := struct{ Usage struct{ In, Out int64 } }{}
+	r.Usage.In, r.Usage.Out = nIn, nOut
 	m := jsonArrRe.FindString(content)
 	if m == "" {
 		return nil, r.Usage.In, r.Usage.Out, fmt.Errorf("no JSON array in reply: %.200s", content)
@@ -190,4 +160,110 @@ func rankBatch(ctx context.Context, rows []Row) ([]rankResult, int64, int64, err
 		}
 	}
 	return out, r.Usage.In, r.Usage.Out, nil
+}
+
+// chat performs one completion against the keyless gateway and returns the
+// reply text plus prompt/completion token counts (for cost accounting).
+func chat(ctx context.Context, system, user string, maxTokens int) (string, int64, int64, error) {
+	body, _ := json.Marshal(map[string]any{
+		"model":       Model,
+		"temperature": 0,
+		"max_tokens":  maxTokens,
+		"messages": []map[string]string{
+			{"role": "system", "content": system},
+			{"role": "user", "content": user},
+		},
+	})
+	req, _ := http.NewRequestWithContext(ctx, "POST", llmURL, bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := (&http.Client{Timeout: 240 * time.Second}).Do(req)
+	if err != nil {
+		return "", 0, 0, err
+	}
+	defer resp.Body.Close()
+	b, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	var r struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+		Usage struct {
+			In  int64 `json:"prompt_tokens"`
+			Out int64 `json:"completion_tokens"`
+		} `json:"usage"`
+		Error any `json:"error"`
+	}
+	if err := json.Unmarshal(b, &r); err != nil {
+		return "", 0, 0, fmt.Errorf("decode (HTTP %d): %.200s", resp.StatusCode, b)
+	}
+	if r.Error != nil || len(r.Choices) == 0 {
+		return "", r.Usage.In, r.Usage.Out, fmt.Errorf("llm error (HTTP %d): %.300s", resp.StatusCode, b)
+	}
+	return r.Choices[0].Message.Content, r.Usage.In, r.Usage.Out, nil
+}
+
+func costUSD(in, out int64) float64 {
+	return float64(in)*priceInPerM/1e6 + float64(out)*priceOutPerM/1e6
+}
+
+const summaryPrompt = `You write the 2-3 sentence editorial intro of a weekly job-radar email for a former national park director (fluent EN/DE/FR) who wants (A) to lead a national park / protected area, ideally in Austria or Sub-Saharan Africa, or (B) senior consultancies on protected-area management/governance. You get this week's picks, the runner-ups and upcoming funding deadlines. Write plain text, no markdown, no bullet points, no greeting, max 90 words: what stands out among the jobs, which one to act on first and why (deadlines!), then one sentence on the most pressing funding deadline(s). Be concrete and use the titles/orgs. Skip anything scored below 50 unless it is notable.`
+
+// Summarize produces the short LLM intro for the digest and books its cost as
+// a "summary" run. Returns "" (no error surfaced) if the budget is exhausted
+// or the model fails — the email is still useful without it.
+func Summarize(ctx context.Context, db *sql.DB, picks, others []Row, funding []string) string {
+	if len(picks) == 0 && len(others) == 0 {
+		return ""
+	}
+	cost := GetCost(ctx, db)
+	if cost.MonthUSD >= MaxMonthUSD() {
+		return ""
+	}
+	var sb strings.Builder
+	sb.WriteString("PICKS:\n")
+	for _, r := range picks {
+		fmt.Fprintf(&sb, "- [%d] %s — %s | deadline: %s | %s\n", r.ScoreVal(), r.Title, orgLoc(r), orDash(r.Deadline), r.Why)
+	}
+	if len(others) > 0 {
+		sb.WriteString("RUNNER-UPS:\n")
+		for _, r := range others {
+			fmt.Fprintf(&sb, "- [%d] %s — %s | deadline: %s | %s\n", r.ScoreVal(), r.Title, orgLoc(r), orDash(r.Deadline), r.Why)
+		}
+	}
+	if len(funding) > 0 {
+		sb.WriteString("FUNDING DEADLINES (grants/programmes the person tracks for their own venture):\n")
+		for _, l := range funding {
+			sb.WriteString("- " + l + "\n")
+		}
+	}
+	run := Run{Started: time.Now().UTC().Format("2006-01-02 15:04:05"), Kind: "summary", Model: Model}
+	text, in, out, err := chat(ctx, summaryPrompt, sb.String(), 2500)
+	run.InTokens, run.OutTokens, run.CostUSD = in, out, costUSD(in, out)
+	if err != nil {
+		run.Log = "summary failed: " + err.Error()
+		insertRun(ctx, db, run)
+		slog.Warn("jobs summary", "error", err)
+		return ""
+	}
+	text = strings.TrimSpace(stripThink(text))
+	if text == "" {
+		run.Log = fmt.Sprintf("summary empty (reasoning exhausted max_tokens?): %d in / %d out tokens, %s", in, out, usd(run.CostUSD))
+		insertRun(ctx, db, run)
+		return ""
+	}
+	run.Log = fmt.Sprintf("summary ok: %d in / %d out tokens, %s", in, out, usd(run.CostUSD))
+	insertRun(ctx, db, run)
+	return text
+}
+
+var thinkRe = regexp.MustCompile(`(?s)<think>.*?</think>`)
+
+func stripThink(s string) string { return thinkRe.ReplaceAllString(s, "") }
+
+func orDash(s string) string {
+	if s == "" {
+		return "–"
+	}
+	return s
 }

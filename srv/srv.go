@@ -617,8 +617,8 @@ func (s *Server) Serve(addr string) error {
 	if _, err := funding.Seed(context.Background(), s.DB); err != nil {
 		slog.Warn("funding seed", "error", err)
 	}
-	jobs.ReportExtra = func(ctx context.Context) (string, bool) {
-		return funding.ReportSection(ctx, s.DB, s.siteURL(), 60, 40)
+	jobs.ReportExtra = func(ctx context.Context) (string, bool, []string) {
+		return funding.ReportSection(ctx, s.DB, s.siteURL(), 90, 40)
 	}
 	go jobs.Scheduler(context.Background(), s.DB, adminEmail(), s.siteURL())
 	mux.HandleFunc("GET /llm.txt", s.HandleLLMTxt)

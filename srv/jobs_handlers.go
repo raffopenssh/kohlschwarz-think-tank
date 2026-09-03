@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -11,15 +12,15 @@ import (
 	"srv.exe.dev/srv/jobs"
 )
 
+// siteURL is the base for admin links in emails. Admin pages rely on exe.dev
+// login, which only works reliably on the *.exe.xyz proxy host (the custom
+// domain via www. redirect-loops on /__exe.dev/auth), so default there.
+// Override with ADMIN_URL.
 func (s *Server) siteURL() string {
-	h := s.Hostname
-	if h == "" || h == "localhost" || !strings.Contains(h, ".") {
-		return "https://kohlschwarz.at"
+	if u := strings.TrimRight(os.Getenv("ADMIN_URL"), "/"); u != "" {
+		return u
 	}
-	if strings.HasPrefix(h, "http") {
-		return h
-	}
-	return "https://" + h
+	return "https://kohlschwarz.exe.xyz"
 }
 
 type jobsPage struct {
