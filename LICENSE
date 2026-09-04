@@ -1,0 +1,58 @@
+MIT License
+
+Copyright (c) 2026 Raffael Hickisch
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---------------------------------------------------------------------------
+
+Scope and third-party components — kohlschwarz.at
+
+The MIT licence above covers the source code in this repository (the public
+app showcase at kohlschwarz.at and its admin tooling).
+
+Content
+- Texts, app descriptions and screenshots (srv/static/thumbs, og-image.jpg)
+  written or produced by the operator: CC BY 4.0
+  https://creativecommons.org/licenses/by/4.0/
+  Attribution: "Kohlschwarz, kohlschwarz.at"
+- The showcased applications are separate projects, each with its own
+  repository and LICENSE file (MIT for code; data sources listed per repo):
+  https://github.com/raffopenssh
+
+Software libraries (each under its own licence)
+- Go standard library (BSD-3-Clause) — https://go.dev/LICENSE
+- modernc.org/sqlite, modernc.org/libc, modernc.org/mathutil,
+  modernc.org/memory (BSD-3-Clause) — https://gitlab.com/cznic/sqlite
+- SQLite (public domain) — https://sqlite.org/copyright.html
+- github.com/dustin/go-humanize (MIT)
+- github.com/google/uuid (BSD-3-Clause)
+- github.com/remyoudompheng/bigfft (BSD-3-Clause)
+- github.com/ncruces/go-strftime (MIT)
+- golang.org/x/exp, golang.org/x/sys (BSD-3-Clause)
+- sqlc (MIT, build-time code generator only) — https://sqlc.dev/
+
+Assets
+- Inline SVG icons: GitHub mark © GitHub, Inc. (used per GitHub Logos and
+  Usage guidelines); remaining icons hand-drawn (MIT).
+- No web fonts, CDNs, analytics or tracking scripts are loaded; system fonts
+  only.
+
+Hosting
+- exe.dev (Bold Software, Inc.) — https://exe.dev/

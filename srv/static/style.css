@@ -657,3 +657,7 @@ footer {
 #contact-modal .modal-close:hover {
     color: var(--fg);
 }
+
+.legal .license-list li {
+    margin-bottom: 0.5rem;
+}
