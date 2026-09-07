@@ -649,7 +649,7 @@ func (s *Server) Serve(addr string) error {
 	jobs.ReportExtra = func(ctx context.Context) (string, bool, []string) {
 		return funding.ReportSection(ctx, s.DB, s.siteURL(), 90, 40)
 	}
-	go jobs.Scheduler(context.Background(), s.DB, adminEmail(), s.siteURL())
+	go jobs.Scheduler(context.Background(), s.DB, s.reportRecipients, s.siteURL())
 	mux.HandleFunc("GET /llm.txt", s.HandleLLMTxt)
 	mux.HandleFunc("GET /api/apps", s.HandleAPIApps)
 	mux.HandleFunc("POST /api/click/{id}", s.HandleTrackClick)

@@ -47,6 +47,11 @@ func (s *Server) viewers(ctx context.Context) []string {
 	return out
 }
 
+// reportRecipients is owner + all viewers: everyone who can read the radar gets the weekly email.
+func (s *Server) reportRecipients() []string {
+	return append([]string{adminEmail()}, s.viewers(context.Background())...)
+}
+
 // isViewer is true for the owner or any allowlisted exe.dev account.
 func (s *Server) isViewer(r *http.Request) bool {
 	if s.isAdmin(r) {

@@ -189,10 +189,11 @@ func (s *Server) HandleAdminJobsEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.startBackground(w, r, "email", 2*time.Minute, func(ctx context.Context) string {
-		if _, err := jobs.WeeklyReport(ctx, s.DB, adminEmail(), s.siteURL(), true); err != nil {
+		to := s.reportRecipients()
+		if _, err := jobs.WeeklyReport(ctx, s.DB, to, s.siteURL(), true); err != nil {
 			return "email failed: " + err.Error()
 		}
-		return "email sent to " + adminEmail()
+		return "email sent to " + strings.Join(to, ", ")
 	})
 }
 

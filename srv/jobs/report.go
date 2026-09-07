@@ -306,7 +306,7 @@ func SendEmail(ctx context.Context, to, subject, body string) error {
 }
 
 // WeeklyReport builds and emails the report; marks postings as reported. Set force to send even when nothing new.
-func WeeklyReport(ctx context.Context, db *sql.DB, to, siteURL string, force bool) (string, error) {
+func WeeklyReport(ctx context.Context, db *sql.DB, to []string, siteURL string, force bool) (string, error) {
 	text, ids := BuildReport(ctx, db, siteURL)
 	picks := strings.Count(text, "\n   fit ") // one meta line per pick
 	run := Run{Started: time.Now().UTC().Format("2006-01-02 15:04:05"), Kind: "email", NewCount: int64(picks)}
@@ -320,21 +320,38 @@ func WeeklyReport(ctx context.Context, db *sql.DB, to, siteURL string, force boo
 		return text, nil
 	}
 	subj := fmt.Sprintf("Park radar · %d pick(s) · %s", picks, time.Now().UTC().Format("2 Jan"))
-	if err := SendEmail(ctx, to, subj, text); err != nil {
-		run.Log = "send failed: " + err.Error()
+	var sent, failed []string
+	var firstErr error
+	for _, addr := range to {
+		if err := SendEmail(ctx, addr, subj, text); err != nil {
+			slog.Warn("jobs weekly report send", "to", addr, "error", err)
+			failed = append(failed, addr+" ("+err.Error()+")")
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
+		}
+		sent = append(sent, addr)
+	}
+	if len(sent) == 0 {
+		run.Log = "send failed: " + strings.Join(failed, "; ")
 		insertRun(ctx, db, run)
-		return text, err
+		return text, firstErr
 	}
 	MarkReported(ctx, db, ids)
-	run.Log = "sent to " + to
+	run.Log = "sent to " + strings.Join(sent, ", ")
+	if len(failed) > 0 {
+		run.Log += " · failed: " + strings.Join(failed, "; ")
+	}
 	insertRun(ctx, db, run)
-	slog.Info("jobs weekly report sent", "to", to, "new", len(ids))
+	slog.Info("jobs weekly report sent", "to", sent, "failed", failed, "new", len(ids))
 	return text, nil
 }
 
 // Scheduler runs fetch daily-ish and fetch+rank+email once a week.
 // Weekly: Monday 06:00 UTC. Daily fetch: 04:00 UTC (keeps postings fresh, no LLM cost).
-func Scheduler(ctx context.Context, db *sql.DB, to, siteURL string) {
+// recipients is resolved at send time so newly added viewers are included.
+func Scheduler(ctx context.Context, db *sql.DB, recipients func() []string, siteURL string) {
 	for {
 		now := time.Now().UTC()
 		nextDaily := time.Date(now.Year(), now.Month(), now.Day(), 4, 0, 0, 0, time.UTC)
@@ -359,7 +376,7 @@ func Scheduler(ctx context.Context, db *sql.DB, to, siteURL string) {
 		Current.Finish(fmt.Sprintf("scheduled fetch: %d new · ranked %d · briefed %d · re-checked %d", r.NewCount, rk.Ranked, br.Ranked, ck.Found))
 		if time.Now().UTC().Weekday() == time.Monday {
 			if Current.Start("email") {
-				if _, err := WeeklyReport(ctx, db, to, siteURL, false); err != nil {
+				if _, err := WeeklyReport(ctx, db, recipients(), siteURL, false); err != nil {
 					slog.Warn("jobs weekly report", "error", err)
 				}
 				Current.Finish("scheduled email")
