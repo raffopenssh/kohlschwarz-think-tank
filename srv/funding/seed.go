@@ -204,6 +204,23 @@ var Seeds = []Entry{
 		Kind: "grant", Track: "africa", Amount: "$50k–15m", DeadlineNote: "closed; next window TBA",
 		Eligibility: "Evidence-driven innovations in lower-income countries.", Note: "After CAR pilot evidence.",
 		Score: 30, Why: "Later."},
+	// -- unlocked by an African entity (founder confirmed 7 Sep 2026 an African company is feasible) --
+	{Key: "unicef-venture-fund", Name: "UNICEF Venture Fund – rolling call (open-source frontier tech, equity-free)", URL: "https://www.unicefventurefund.org/apply-funding",
+		Kind: "grant", Track: "africa", Amount: "up to US$100k equity-free + 12 months mentoring", DeadlineNote: "rolling call; themed calls (Climate & Health closed 17 May 2026) recur ~2×/yr",
+		Eligibility: "For-profit company registered in a UNICEF programme country (CAR, Kenya, Rwanda … all qualify) – registration may be completed ~3 months after EOI; working prototype; open-source licence (GPL/MIT/BSD); AI/ML or blockchain preferred.", Note: "Frame as child-relevant climate resilience: flood/drought/fire early warning for schools & communities, open-source. The kohlschwarz apps are already open source – strongest fit of any Africa-entity route.",
+		Score: 75, Why: "Equity-free $100k, open-source + AI, CAR entity eligible."},
+	{Key: "gsma-innovation-fund", Name: "GSMA Innovation Fund (Climate Resilience & Adaptation / Green Transition)", URL: "https://www.gsma.com/solutions-and-impact/connectivity-for-good/mobile-for-development/gsma-innovation-fund/",
+		Kind: "grant", Track: "africa", Amount: "£100–250k equity-free, 15–18 months + MNO introductions", DeadlineNote: "Green Transition round closed 6 Apr 2026; Climate Resilience 3.0 expected ~late 2026/2027 – subscribe to ClimateTech newsletter",
+		Eligibility: "Startup/SME registered and operating in an LMIC (Africa explicitly); digital/mobile solution for climate-vulnerable populations; some traction.", Note: "FCDO/Sida-backed. Past rounds prioritised extreme-weather early warning and forest/biodiversity nature-based digital solutions – exact match. Needs an African entity + a mobile delivery angle (SMS/USSD alerts via Orange/Telecel CAR).",
+		Score: 65, Why: "Largest equity-free ticket for an African entity; thematic bullseye."},
+	{Key: "catalyst-fund", Name: "Catalyst Fund (Nairobi) – pre-seed climate adaptation VC + venture builder", URL: "https://www.thecatalystfund.com/",
+		Kind: "equity", Track: "africa", Amount: "~$200k initial equity + 5–7 months hands-on venture building", DeadlineNote: "rolling; $30m second close Jul 2026, deploying now",
+		Eligibility: "African-registered startups, pre-seed to Series A; climate adaptation & resilience (agri, water, energy, fintech, essential services).", Note: "Speedinvest is an LP (Vienna link). Adaptation-only thesis – land-risk / early-warning intelligence fits 'climate-smart essential services'. Wants a team.",
+		Score: 55, Why: "Specialist adaptation investor, actively deploying."},
+	{Key: "africa-prize-engineering", Name: "Royal Academy of Engineering – Africa Prize for Engineering Innovation 2028", URL: "https://africaprize.raeng.org.uk/about-the-prize/how-to-apply/",
+		Kind: "prize", Track: "africa", Amount: "£50k winner, £10k ×3 finalists, £5k one-to-watch + 8-month commercialisation programme", DeadlineNote: "2027 cycle closed 8 Sep 2026; next opens ~Jul 2027",
+		Eligibility: "Lead applicant must be a sub-Saharan African citizen ordinarily based there, holding ≥50% equity; innovation based in SSA.", Note: "Only works with a CAR/Kenyan co-founder as lead – a good reason to structure the African entity with a local majority partner.",
+		Score: 40, Why: "Needs an African lead co-founder."},
 
 	// ---------- Corporate programs (credits/data; need entity or NGO partner) ----------
 	{Key: "gee-noncommercial", Name: "Google Earth Engine – Noncommercial partner tier", URL: "https://developers.google.com/earth-engine/guides/noncommercial_tiers",
@@ -382,6 +399,16 @@ var Seeds = []Entry{
 	{Key: "swissre-foundation", Name: "Swiss Re Foundation / Munich Re Foundation", URL: "https://www.swissrefoundation.org/",
 		Kind: "grant", Track: "prize", Amount: "challenge-specific", DeadlineNote: "watch resilience challenges",
 		Eligibility: "Usually established orgs.", Note: "", Score: 25, Why: "No open route."},
+
+	// ---------- Free EO compute / data for pre-commercial work (no entity needed) ----------
+	{Key: "esa-nor", Name: "ESA Network of Resources (NoR) sponsorship – free EO cloud/data (openEO, CDSE, UP42, Sentinel Hub)", URL: "https://eo4society.esa.int/network-of-resources/nor-sponsorship/",
+		Kind: "grant", Track: "space", Amount: "up to €5,000 per request, 12 months (non-ESA projects); repeatable per project", DeadlineNote: "rolling; apply ≤1 month before project start",
+		Eligibility: "Research, development or pre-commercial users from ESA member states (Austria ✓); commercial/operational use excluded; UP42 needs an organisation e-mail domain (kohlschwarz.at works).", Note: "Fill the pricing wizard on the NoR portal, sign PDF, mail NoR@esa.int. Covers Sentinel Hub / openEO / Planet-via-Sinergise processing – replaces paying for Planet TFO and GEE quota while the platform is pre-commercial. Also a first ESA touchpoint before CASSINI/BIC.",
+		Score: 70, Why: "Free, fast, individual-eligible, exactly the compute you need now."},
+	{Key: "erasmus-young-entrepreneurs", Name: "Erasmus for Young Entrepreneurs – 1–6 month funded stay with a host EO/govtech company", URL: "https://www.erasmus-entrepreneurs.eu/",
+		Kind: "grant", Track: "eu", Amount: "€600–1,100/month living allowance for 1–6 months (host-country dependent)", DeadlineNote: "rolling; apply via Austrian contact point (WKÖ / aws)",
+		Eligibility: "Aspiring founder with a business plan, or company <3 yrs; resident in EU; host = SME >3 yrs in another participating country.", Note: "Cheap way to embed 3–6 months inside e.g. a Sentinel Hub (Ljubljana), Kayrros, or a UK geospatial SME – learn the business, get a reference customer/partner, pay rent. Stackable with Gründungsstipendium? – check IO rules (both are 'founder stipends').",
+		Score: 45, Why: "Small money, big network leverage; individual-eligible now."},
 
 	// ---------- Cloud credits (need GmbH) ----------
 	{Key: "gcp-startups", Name: "Google for Startups Cloud Program", URL: "https://cloud.google.com/startup",
