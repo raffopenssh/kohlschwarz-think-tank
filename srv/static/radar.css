@@ -57,7 +57,7 @@ button.ghost:hover{color:var(--fg);background:var(--chip)}
 
 /* cards */
 .list{display:flex;flex-direction:column}
-.card{position:relative;padding:.85rem 0 .85rem 3.1rem;border-top:1px solid var(--line);
+.card{position:relative;padding:.85rem .6rem .85rem 3.9rem;border-top:1px solid var(--line);
   animation:in .25s ease both}
 .card:last-child{border-bottom:1px solid var(--line)}
 .card.new{background:linear-gradient(90deg,var(--new) 0,transparent 70%)}
@@ -65,7 +65,7 @@ button.ghost:hover{color:var(--fg);background:var(--chip)}
 .card[hidden]{display:none}
 @keyframes in{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.card{animation:none}}
-.score{position:absolute;left:0;top:.95rem;width:2.5rem;height:1.7rem;display:flex;align-items:center;justify-content:center;
+.score{position:absolute;left:.6rem;top:.95rem;width:2.5rem;height:1.7rem;display:flex;align-items:center;justify-content:center;
   font:700 .85rem/1 var(--mono);border-radius:6px;color:#fff}
 .score.s90{background:var(--s90)}.score.s70{background:var(--s70)}.score.s40{background:var(--s40)}.score.s0{background:var(--s0)}
 .title{font-weight:600;font-size:1rem;line-height:1.35;display:block;word-break:break-word}
@@ -136,7 +136,7 @@ button.ghost:hover{color:var(--fg);background:var(--chip)}
 .tog{display:none}
 @media (max-width:640px){
   body{padding-inline:12px}
-  .card{padding-left:2.9rem}
+  .card{padding-left:3.5rem;padding-right:.4rem}.score{left:.4rem}
   .tog{display:inline-flex;font-size:.8rem;color:var(--muted);background:none;border:0;padding:.2em .2em .2em 0;min-height:0;margin-top:.25rem;gap:.25em}
   .tog svg.i{transition:transform .2s}.card.open .tog svg.i{transform:rotate(180deg)}
   .tog .close{display:none}.card.open .tog .open{display:none}.card.open .tog .close{display:inline}
