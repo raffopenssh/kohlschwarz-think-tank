@@ -85,7 +85,7 @@ button.ghost:hover{color:var(--fg);background:var(--chip)}
 /* one disclosure per card: brief items (or snippet) + meta + actions.
    Native <details>, one-line teaser when closed, animated open. */
 .brief{margin:.4rem 0 0;border:1px solid var(--line);border-radius:10px;background:var(--chip);font-size:.86rem;line-height:1.45;overflow:hidden}
-.brief summary{list-style:none;display:flex;align-items:flex-start;gap:.5em;padding:.5rem .6rem;cursor:pointer;min-height:40px;color:var(--muted);user-select:none;-webkit-tap-highlight-color:transparent}
+.brief summary{list-style:none;display:flex;align-items:flex-start;gap:.55em;padding:.55rem .6rem;cursor:pointer;min-height:40px;color:var(--muted);user-select:none;-webkit-tap-highlight-color:transparent}
 .brief summary::-webkit-details-marker{display:none}
 @media (hover:hover){.brief summary:hover{color:var(--fg)}}
 .brief summary:focus-visible{outline:2px solid var(--s70);outline-offset:-2px;border-radius:10px}
@@ -99,15 +99,18 @@ button.ghost:hover{color:var(--fg);background:var(--chip)}
 .brief[open] .body{grid-template-rows:1fr}
 .brief .body>*{overflow:hidden;margin:0;padding:0 .6rem}
 .brief .body>p{color:var(--fg);text-wrap:pretty;hyphens:auto;padding-bottom:.5rem}
-.brief .body>dl{padding-bottom:.3rem}
-.brief dl>div{display:grid;grid-template-columns:4.2em 1fr;gap:.15rem .6rem;padding:.3rem 0;border-top:1px solid var(--line)}
+.brief .body>dl{padding-bottom:.25rem}
+.brief dl>div{display:grid;grid-template-columns:4.2em 1fr;gap:.15rem .75rem;padding:.38rem 0;border-top:1px solid var(--line)}
 .brief dl>div:first-child{border-top:0}
 .brief dt{font-size:.66rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:.2em}
 .brief dd{margin:0;color:var(--fg);text-wrap:pretty}
-.brief .meta{border-top:1px solid var(--line);padding-top:.45rem;padding-bottom:.5rem;font-size:.82rem}
-.brief .meta{align-items:center;flex-wrap:wrap}.brief .meta>span{flex:1;min-width:0}
-.brief .dismiss{margin-left:auto}.brief .dismiss button{font-size:.8rem;padding:.25em .5em;min-height:32px;gap:.3em;color:var(--muted)}
-.brief .dismiss button:hover{color:var(--soon-fg,#b45309)}
+.brief .meta{border-top:1px solid var(--line);margin:0;padding:.35rem .35rem .35rem .6rem;font-size:.82rem;align-items:center;flex-wrap:wrap;column-gap:.6em;row-gap:.2rem;min-height:2.75rem}
+.brief .meta>span{flex:1 1 16em;min-width:0;padding:.3rem 0}
+.brief .meta svg.i{top:0;flex:none}
+.brief .dismiss{margin-left:auto;display:flex}
+.brief .dismiss button{font-size:.8rem;line-height:1.2;padding:.45em .6em;min-height:32px;gap:.35em;color:var(--muted);border-radius:7px}
+.brief .dismiss button:hover{color:var(--soon-fg,#b45309);background:var(--line)}
+.brief .dismiss button:focus-visible{outline:2px solid var(--s70);outline-offset:1px}
 @supports (interpolate-size:allow-keywords){
   .brief{interpolate-size:allow-keywords}
   .brief::details-content{block-size:0;overflow:clip;transition:block-size .25s cubic-bezier(.2,.8,.2,1),content-visibility .25s allow-discrete}
@@ -115,7 +118,14 @@ button.ghost:hover{color:var(--fg);background:var(--chip)}
   .brief .body,.brief[open] .body{display:block}
 }
 @media (prefers-reduced-motion:reduce){.brief .body,.brief .chev,.brief::details-content{transition:none}}
-@media (max-width:640px){.brief dl>div{grid-template-columns:1fr;gap:.05rem}.brief dt{padding-top:0}}
+@media (max-width:640px){
+  .brief dl>div{grid-template-columns:1fr;gap:.1rem;padding:.45rem 0}.brief dt{padding-top:0}
+  .brief .meta{padding:0;row-gap:0;column-gap:0}
+  .brief .meta>svg.i{display:none}
+  .brief .meta>span{flex:1 1 100%;padding:.55rem .6rem}
+  .brief .dismiss{flex:1 1 100%;margin:0;border-top:1px solid var(--line)}
+  .brief .dismiss button{width:100%;justify-content:center;min-height:44px;border-radius:0 0 9px 9px;font-size:.84rem}
+}
 .actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.55rem}
 .actions form{display:flex;gap:.4rem;flex:1;min-width:0;align-items:center}
 .actions select,.actions input{font:inherit;font-size:.85rem;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.4em .55em;min-height:36px}
