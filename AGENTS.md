@@ -13,7 +13,7 @@ journalctl -u srv -n 50 --no-pager
 - Local check: `curl -u admin:$(grep ADMIN_PASSWORD .env|cut -d= -f2) localhost:8000/admin/jobs`. Headless browser can't send basic auth → save HTML to a tmp dir and serve with `busybox httpd` on a free port (8765 is often taken).
 - If restart loops with "address already in use": `sudo ss -ltnp | grep :8000` and kill the orphan `server`.
 - Templates are parsed per request (`renderTemplate`, FuncMap: `runAgo`) → template/CSS/JS edits need no rebuild, Go edits do. Bump `?v=` on `radar.css`/`radar.js` links after changes.
-- Migrations: `db/migrations/NNN-name.sql`, applied at startup; end with `INSERT OR IGNORE INTO migrations …`. Latest: 009 (settings k/v).
+- Migrations: `db/migrations/NNN-name.sql`, applied at startup; end with `INSERT OR IGNORE INTO migrations …`. Latest: 010 (job_postings.brief).
 - Commit with `git add <files>` explicitly (blind `git add -A` is blocked).
 
 ## Layout
@@ -31,7 +31,7 @@ db/                        sqlite open + migrations; dbgen = sqlc output for pub
 ```
 
 ## Jobs radar conventions
-- Pipeline: `FetchAll` (upsert by url) → `RankPending` (muse-glimmer via exe.dev gateway, cap `MaxMonthUSD`) → `WeeklyReport` (Mon 04:00 UTC; daily fetch). Only one of fetch/rank/email runs at a time (`jobs.Current.Start/Finish`); UI polls `/admin/jobs/status.json`.
+- Pipeline: `FetchAll` (upsert by url) → `RankPending` (muse-glimmer via exe.dev gateway, cap `MaxMonthUSD` default $0.30) → `BriefPending` (brief.go: fetches page via r.jina.ai / LinkedIn JSON-LD, 4-line What/Terms/Duties/Fit brief for score ≥ 35, shown as collapsed `<details>` and in email picks) → `WeeklyReport` (Mon 04:00 UTC; daily fetch). Only one of fetch/rank/brief/email runs at a time (`jobs.Current.Start/Finish`); UI polls `/admin/jobs/status.json`.
 - List is deduped at render time (`jobs.Dedupe`), never in the DB; merged copies show as “+N copies merged”. Add multilingual role words to `synonyms` in dedupe.go, add a case to `dedupe_test.go`.
 - Every report/UI cost line must use `Cost.CostLine()`.
 - Adding a source: append to `Sources` in sources.go; LinkedIn sleeps 6s between requests.

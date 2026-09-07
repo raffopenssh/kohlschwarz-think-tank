@@ -44,7 +44,7 @@ func (a *Activity) Finish(summary string) {
 }
 
 type ActivityState struct {
-	Running string `json:"running"`         // "" | fetch | rank | email
+	Running string `json:"running"`         // "" | fetch | rank | brief | email
 	Since   int64  `json:"since,omitempty"` // unix seconds
 	Done    int64  `json:"done,omitempty"`  // unix seconds of last completion
 	Last    string `json:"last,omitempty"`

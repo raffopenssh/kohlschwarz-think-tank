@@ -159,7 +159,9 @@ func (s *Server) HandleAdminJobsFetch(w http.ResponseWriter, r *http.Request) {
 		run := jobs.FetchAll(ctx, s.DB)
 		jobs.Current.Switch("rank")
 		rk := jobs.RankPending(ctx, s.DB, 200)
-		msg := fmt.Sprintf("%d new, %d ranked", run.NewCount, rk.Ranked)
+		jobs.Current.Switch("brief")
+		br := jobs.BriefPending(ctx, s.DB, 60)
+		msg := fmt.Sprintf("%d new, %d ranked, %d briefed", run.NewCount, rk.Ranked, br.Ranked)
 		if run.SourcesErr > 0 {
 			msg += fmt.Sprintf(", %d sources failed", run.SourcesErr)
 		}
@@ -173,7 +175,9 @@ func (s *Server) HandleAdminJobsRank(w http.ResponseWriter, r *http.Request) {
 	}
 	s.startBackground(w, r, "rank", 10*time.Minute, func(ctx context.Context) string {
 		run := jobs.RankPending(ctx, s.DB, 200)
-		return fmt.Sprintf("ranked %d postings, cost $%.4f", run.Ranked, run.CostUSD)
+		jobs.Current.Switch("brief")
+		br := jobs.BriefPending(ctx, s.DB, 60)
+		return fmt.Sprintf("ranked %d, briefed %d, cost $%.4f", run.Ranked, br.Ranked, run.CostUSD+br.CostUSD)
 	})
 }
 

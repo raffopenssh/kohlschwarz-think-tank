@@ -173,6 +173,21 @@ func writePick(b *strings.Builder, n int, r Row) {
 	if r.Why != "" {
 		fmt.Fprintf(b, "   %s\n", strings.TrimRight(r.Why, ".")+".")
 	}
+	if items := r.BriefItems(); len(items) > 0 {
+		for _, it := range items {
+			for i, ln := range strings.Split(wrap(it.Text, 60), "\n") {
+				if i == 0 {
+					fmt.Fprintf(b, "   %-7s %s\n", it.Label+":", ln)
+				} else {
+					fmt.Fprintf(b, "           %s\n", ln)
+				}
+			}
+		}
+	} else if r.Brief != "" {
+		for _, ln := range strings.Split(wrap(r.Brief, 69), "\n") {
+			fmt.Fprintf(b, "   %s\n", ln)
+		}
+	}
 	meta := []string{fmt.Sprintf("fit %d/100", r.ScoreVal()), strings.ToUpper(r.Region)}
 	if r.Kind != "" && r.Kind != "other" {
 		meta = append(meta, r.Kind)
@@ -279,7 +294,9 @@ func Scheduler(ctx context.Context, db *sql.DB, to, siteURL string) {
 		r := FetchAll(ctx, db)
 		Current.Switch("rank")
 		rk := RankPending(ctx, db, 200)
-		Current.Finish(fmt.Sprintf("scheduled fetch: %d new · ranked %d", r.NewCount, rk.Ranked))
+		Current.Switch("brief")
+		br := BriefPending(ctx, db, 60)
+		Current.Finish(fmt.Sprintf("scheduled fetch: %d new · ranked %d · briefed %d", r.NewCount, rk.Ranked, br.Ranked))
 		if time.Now().UTC().Weekday() == time.Monday {
 			if Current.Start("email") {
 				if _, err := WeeklyReport(ctx, db, to, siteURL, false); err != nil {

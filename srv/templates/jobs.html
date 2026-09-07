@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Park leadership radar · admin</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/static/radar.css?v=5">
+<link rel="stylesheet" href="/static/radar.css?v=7">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -63,9 +63,9 @@
     {{if .ReportedAt}}<span class="tag"><svg class="i"><use href="#i-mail"/></svg> emailed</span>{{end}}
   </div>
   {{if .Why}}<div class="line why"><svg class="i"><use href="#i-arrow"/></svg><span>{{.Why}}</span></div>{{end}}
+{{$hb := .HasBrief}}{{$it := .BriefItems}}{{with .Context}}<details class="brief"><summary><span class="lbl">{{if $hb}}brief{{else}}snippet{{end}}</span><span class="teaser">{{with $it}}{{(index . 0).Text}}{{else}}{{.}}{{end}}</span><svg class="i chev"><use href="#i-chev"/></svg></summary><div class="body">{{with $it}}<dl>{{range .}}<div><dt>{{.Label}}</dt><dd>{{.Text}}</dd></div>{{end}}</dl>{{else}}<p>{{.}}</p>{{end}}</div></details>{{end}}
   <button class="tog" type="button" aria-expanded="false"><svg class="i"><use href="#i-chev"/></svg><span class="open">details</span><span class="close">less</span></button>
   <div class="more">
-    {{with .Context}}<p class="ctx">{{.}}</p>{{end}}
     <div class="line"><svg class="i"><use href="#i-clock"/></svg><span>since <b>{{.Since}}</b> · last seen <b title="{{.LastSeen}} UTC">{{.SeenAgo}}</b> · via {{.Source}}{{if .Dupes}} · +{{.Dupes}} {{if eq .Dupes 1}}copy{{else}}copies{{end}} merged{{end}}</span></div>
     {{if $.Owner}}<div class="actions"><form method="post" action="/admin/jobs/hide/{{.ID}}">{{if .Hidden}}<input type="hidden" name="unhide" value="1"><button class="ghost"><svg class="i"><use href="#i-eye"/></svg>unhide</button>{{else}}<button class="ghost"><svg class="i"><use href="#i-eyeoff"/></svg>hide</button>{{end}}</form></div>{{end}}
   </div>
@@ -76,7 +76,7 @@
 <details class="runs"><summary><h2>Runs <span class="n">{{len .Runs}}</span></h2></summary>
 <ul class="runlist">
 {{range .Runs}}<li class="run run-{{.Kind}}"><span class="kind">{{.Kind}}</span><time class="dim" datetime="{{.Started}}" title="{{.Started}} UTC">{{runAgo .}}</time>
-<span class="sum">{{if eq .Kind "fetch"}}{{.NewCount}} new · {{.Matched}}/{{.Found}} matched{{if .SourcesErr}} · <span class="warn">{{.SourcesErr}} failed</span>{{end}}{{else if eq .Kind "rank"}}{{.Ranked}} ranked · ${{printf "%.4f" .CostUSD}}{{else if eq .Kind "email"}}{{.NewCount}} items{{else if eq .Kind "summary"}}${{printf "%.4f" .CostUSD}}{{end}}</span>
+<span class="sum">{{if eq .Kind "fetch"}}{{.NewCount}} new · {{.Matched}}/{{.Found}} matched{{if .SourcesErr}} · <span class="warn">{{.SourcesErr}} failed</span>{{end}}{{else if eq .Kind "rank"}}{{.Ranked}} ranked · ${{printf "%.4f" .CostUSD}}{{else if eq .Kind "brief"}}{{.Ranked}} briefed · ${{printf "%.4f" .CostUSD}}{{else if eq .Kind "email"}}{{.NewCount}} items{{else if eq .Kind "summary"}}${{printf "%.4f" .CostUSD}}{{end}}</span>
 {{if .Log}}<details class="log"><summary>log</summary><pre>{{.Log}}</pre></details>{{end}}</li>
 {{end}}
 </ul>

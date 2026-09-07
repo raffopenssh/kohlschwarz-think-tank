@@ -1,11 +1,11 @@
 package jobs
 
 import (
-	"regexp"
 	"context"
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -29,6 +29,7 @@ type Row struct {
 	LastSeen   string
 	Score      *int64
 	Why        string
+	Brief      string
 	ReportedAt *string
 	Hidden     bool
 	Dupes      int // extra copies collapsed by Dedupe (not stored)
@@ -55,10 +56,16 @@ func (r Row) SeenAgo() string { return Ago(r.LastSeen) }
 
 var snippetPrefixRe = regexp.MustCompile(`^\[[^\]]{1,40}\]\s*`)
 
-// Context is the fetched description (department, duties) shown in the
-// details panel so the reader can judge the ranking; source tag, title echo
-// and boilerplate are stripped.
+// HasBrief reports whether Context is the LLM brief rather than the raw snippet.
+func (r Row) HasBrief() bool { return r.Brief != "" }
+
+// Context is what the details panel shows under the 'why': the LLM brief when
+// one exists, otherwise the raw fetched snippet with source tag, title echo and
+// boilerplate stripped.
 func (r Row) Context() string {
+	if r.Brief != "" {
+		return strings.Join(strings.Split(r.Brief, "\n"), " · ")
+	}
 	s := snippetPrefixRe.ReplaceAllString(strings.TrimSpace(r.Snippet), "")
 	s = strings.TrimPrefix(s, r.Title)
 	s = strings.TrimLeft(s, " ·")
@@ -92,7 +99,7 @@ func (r Row) IsNew() bool {
 	return err == nil && time.Since(t) < 8*24*time.Hour
 }
 
-const rowCols = `id, url, source, title, org, location, snippet, lang, region, kind, posted, deadline, first_seen, last_seen, score, why, reported_at, hidden`
+const rowCols = `id, url, source, title, org, location, snippet, lang, region, kind, posted, deadline, first_seen, last_seen, score, why, brief, reported_at, hidden`
 
 func scanRows(rows *sql.Rows) ([]Row, error) {
 	defer rows.Close()
@@ -100,7 +107,7 @@ func scanRows(rows *sql.Rows) ([]Row, error) {
 	for rows.Next() {
 		var r Row
 		var hidden int64
-		if err := rows.Scan(&r.ID, &r.URL, &r.Source, &r.Title, &r.Org, &r.Location, &r.Snippet, &r.Lang, &r.Region, &r.Kind, &r.Posted, &r.Deadline, &r.FirstSeen, &r.LastSeen, &r.Score, &r.Why, &r.ReportedAt, &hidden); err != nil {
+		if err := rows.Scan(&r.ID, &r.URL, &r.Source, &r.Title, &r.Org, &r.Location, &r.Snippet, &r.Lang, &r.Region, &r.Kind, &r.Posted, &r.Deadline, &r.FirstSeen, &r.LastSeen, &r.Score, &r.Why, &r.Brief, &r.ReportedAt, &hidden); err != nil {
 			return nil, err
 		}
 		r.Hidden = hidden == 1
@@ -142,6 +149,15 @@ func List(ctx context.Context, db *sql.DB, includeHidden bool, limit int) ([]Row
 // Unranked returns postings not yet scored.
 func Unranked(ctx context.Context, db *sql.DB, limit int) ([]Row, error) {
 	rows, err := db.QueryContext(ctx, `SELECT `+rowCols+` FROM job_postings WHERE score IS NULL AND hidden = 0 ORDER BY first_seen DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	return scanRows(rows)
+}
+
+// Unbriefed returns ranked, visible postings scoring >= min that have no brief yet.
+func Unbriefed(ctx context.Context, db *sql.DB, min, limit int) ([]Row, error) {
+	rows, err := db.QueryContext(ctx, `SELECT `+rowCols+` FROM job_postings WHERE score >= ? AND hidden = 0 AND briefed_at IS NULL ORDER BY score DESC, first_seen DESC LIMIT ?`, min, limit)
 	if err != nil {
 		return nil, err
 	}

@@ -27,12 +27,13 @@ const (
 
 const llmURL = "https://llm.int.exe.xyz/v1/chat/completions"
 
-// MaxMonthUSD is the hard monthly LLM budget (default $0.17); ranking stops when exceeded.
+// MaxMonthUSD is the hard monthly LLM budget (default $0.30: ~$0.06 rank,
+// ~$0.06 briefs, ~$0.04 weekly summaries at steady state); LLM steps stop when exceeded.
 func MaxMonthUSD() float64 {
 	if v, err := strconv.ParseFloat(os.Getenv("JOBS_LLM_BUDGET_USD"), 64); err == nil && v > 0 {
 		return v
 	}
-	return 0.17
+	return 0.30
 }
 
 const systemPrompt = `You rank job postings, tenders and consultancy calls for ONE specific person. Be strict.
@@ -55,7 +56,7 @@ SCORING 0-100:
   0-34: everything else.
 
 OUTPUT: a JSON array, one object per input id, no prose:
-[{"id":<int>,"score":<0-100>,"region":"austria|ssa|global|other","kind":"director|consultancy|senior|pathway|other","why":"English. Non-Austrian: <=12 words. Austrian authority postings (region austria, employer Land/Bund/Stadt Wien/ÖBf): <=25 words, MUST name the unit/department as given in the posting, the park it would lead to (or 'no park link'), and the verdict, e.g. 'Abt. Naturschutz RU5 → NP Donau-Auen; Referent-level legal post, solid entry'"}]`
+[{"id":<int>,"score":<0-100>,"region":"austria|ssa|global|other","kind":"director|consultancy|senior|pathway|other","why":"English, terse, <=14 words, no full sentences. Austrian authority postings: unit as named in the posting → park (or 'no park link'); verdict, e.g. 'Abt. Naturschutz RU5 → NP Donau-Auen; Referent-level legal post'. Non-Austrian: level + fit, e.g. 'LMMA finance consultancy, not PA management'"}]`
 
 type rankResult struct {
 	ID     int64  `json:"id"`
@@ -65,6 +66,7 @@ type rankResult struct {
 	Why    string `json:"why"`
 }
 
+var mdLinkRe = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
 var jsonArrRe = regexp.MustCompile(`(?s)\[\s*\{.*\}\s*\]`)
 var jsonObjRe = regexp.MustCompile(`\{[^{}]*\}`)
 
@@ -131,7 +133,7 @@ func RankPending(ctx context.Context, db *sql.DB, maxItems int) Run {
 			}
 			_, err := db.ExecContext(ctx, `UPDATE job_postings SET score = ?, kind = ?, why = ?, scored_at = datetime('now'),
 				region = CASE WHEN ? IN ('austria','ssa','global','other') THEN ? ELSE region END WHERE id = ? AND score IS NULL`,
-				r.Score, r.Kind, truncate(r.Why, 220), r.Region, r.Region, r.ID)
+				r.Score, r.Kind, truncate(r.Why, 120), r.Region, r.Region, r.ID)
 			if err == nil {
 				run.Ranked++
 				scored[r.ID] = true
