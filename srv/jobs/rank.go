@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"srv.exe.dev/srv/feedback"
 	"strconv"
 	"strings"
 	"time"
@@ -82,6 +83,10 @@ func RankPending(ctx context.Context, db *sql.DB, maxItems int) Run {
 		insertRun(ctx, db, run)
 		return run
 	}
+	hints := feedback.PromptHints(ctx, db, "job", 40)
+	if hints != "" {
+		fmt.Fprintf(&logb, "· owner feedback in prompt: %d chars\n", len(hints))
+	}
 	rows, err := Unranked(ctx, db, maxItems)
 	if err != nil {
 		run.Log = "unranked: " + err.Error()
@@ -106,7 +111,7 @@ func RankPending(ctx context.Context, db *sql.DB, maxItems int) Run {
 		n := min(batch, len(pending))
 		cur := pending[:n]
 		pending = pending[n:]
-		res, in, out, err := rankBatch(ctx, cur)
+		res, in, out, err := rankBatch(ctx, cur, hints)
 		run.InTokens += in
 		run.OutTokens += out
 		c := costUSD(in, out)
@@ -161,13 +166,13 @@ func RankPending(ctx context.Context, db *sql.DB, maxItems int) Run {
 	return run
 }
 
-func rankBatch(ctx context.Context, rows []Row) ([]rankResult, int64, int64, error) {
+func rankBatch(ctx context.Context, rows []Row, hints string) ([]rankResult, int64, int64, error) {
 	var sb strings.Builder
 	for _, r := range rows {
 		fmt.Fprintf(&sb, "id=%d | %s | org: %s | loc: %s | posted: %s | deadline: %s | src: %s\n  %s\n",
 			r.ID, r.Title, r.Org, r.Location, r.Posted, r.Deadline, r.Source, truncate(r.Snippet, 700))
 	}
-	content, nIn, nOut, err := chat(ctx, systemPrompt, sb.String(), 1500+400*len(rows))
+	content, nIn, nOut, err := chat(ctx, systemPrompt+hints, sb.String(), 1500+400*len(rows))
 	if err != nil {
 		return nil, nIn, nOut, err
 	}

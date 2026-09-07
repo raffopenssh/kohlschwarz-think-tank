@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"srv.exe.dev/srv/feedback"
 	"srv.exe.dev/srv/jobs"
 )
 
@@ -46,6 +47,24 @@ type jobsPage struct {
 	UpdatedAgo string
 	Owner      bool // false for allowlisted viewers (read-only)
 	Viewers    int
+	Reasons    []feedback.Reason
+	Feedback   feedbackPanel
+}
+
+// feedbackPanel is the owner's "what you told the radar" summary.
+type feedbackPanel struct {
+	Reasons []feedback.Count
+	Recent  []feedback.Item
+	Up      int
+	Down    int
+	Trashed int
+}
+
+func (s *Server) feedbackPanel(ctx context.Context, radar string) feedbackPanel {
+	p := feedbackPanel{Reasons: feedback.ReasonCounts(ctx, s.DB, radar)}
+	p.Recent, _ = feedback.Recent(ctx, s.DB, radar, 15)
+	p.Up, p.Down, p.Trashed = feedback.Totals(ctx, s.DB, radar)
+	return p
 }
 
 func runAgo(v any) string {
@@ -94,6 +113,7 @@ func (s *Server) HandleAdminJobs(w http.ResponseWriter, r *http.Request) {
 		LastFetch: lf, LastEmail: jobs.LastRun(ctx, s.DB, "email"),
 		Activity: jobs.Current.State(), UpdatedAgo: runAgo(lf),
 		Owner: owner, Viewers: len(s.viewers(ctx)),
+		Reasons: feedback.Reasons, Feedback: s.feedbackPanel(ctx, "job"),
 	}
 	if lf != nil {
 		ts := lf.Started
@@ -208,13 +228,4 @@ func (s *Server) HandleAdminJobsVoucher(w http.ResponseWriter, r *http.Request) 
 		msg = "voucher failed: " + err.Error()
 	}
 	http.Redirect(w, r, "/admin/jobs?msg="+url.QueryEscape(msg), http.StatusSeeOther)
-}
-
-func (s *Server) HandleAdminJobsHide(w http.ResponseWriter, r *http.Request) {
-	if !s.requireAuth(w, r) {
-		return
-	}
-	id, _ := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	jobs.SetHidden(r.Context(), s.DB, id, r.FormValue("unhide") == "")
-	http.Redirect(w, r, "/admin/jobs", http.StatusSeeOther)
 }

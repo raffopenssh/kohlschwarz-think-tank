@@ -29,6 +29,8 @@ type Entry struct {
 	Why          string
 	Status       string
 	UserNote     string
+	Vote         int    // owner thumbs: 1 up, -1 down, 0 none
+	TrashReason  string // why skipped/rejected ('' = not given)
 }
 
 // DaysLeft returns days until deadline, or -1 when unknown.
@@ -58,13 +60,13 @@ func (e Entry) DL() string {
 	return "—"
 }
 
-const cols = `id, key, name, url, kind, track, amount, deadline, deadline_note, eligibility, note, score, why, status, user_note`
+const cols = `id, key, name, url, kind, track, amount, deadline, deadline_note, eligibility, note, score, why, status, user_note, vote, trash_reason`
 
 func scan(rows *sql.Rows) ([]Entry, error) {
 	var out []Entry
 	for rows.Next() {
 		var e Entry
-		if err := rows.Scan(&e.ID, &e.Key, &e.Name, &e.URL, &e.Kind, &e.Track, &e.Amount, &e.Deadline, &e.DeadlineNote, &e.Eligibility, &e.Note, &e.Score, &e.Why, &e.Status, &e.UserNote); err != nil {
+		if err := rows.Scan(&e.ID, &e.Key, &e.Name, &e.URL, &e.Kind, &e.Track, &e.Amount, &e.Deadline, &e.DeadlineNote, &e.Eligibility, &e.Note, &e.Score, &e.Why, &e.Status, &e.UserNote, &e.Vote, &e.TrashReason); err != nil {
 			return nil, err
 		}
 		out = append(out, e)
@@ -119,12 +121,48 @@ func Seed(ctx context.Context, db *sql.DB) (int, error) {
 
 var validStatus = map[string]bool{"open": true, "applied": true, "rejected": true, "won": true, "skip": true}
 
-func SetStatus(ctx context.Context, db *sql.DB, id int64, status, note string) error {
+func ValidStatus(s string) bool { return validStatus[s] }
+
+// SetStatus changes status; reason is kept when non-empty (why it was skipped/rejected).
+func SetStatus(ctx context.Context, db *sql.DB, id int64, status, reason string) error {
 	if !validStatus[status] {
 		return fmt.Errorf("bad status %q", status)
 	}
-	_, err := db.ExecContext(ctx, `UPDATE funding SET status=?, user_note=?, updated_at=datetime('now') WHERE id=?`, status, strings.TrimSpace(note), id)
+	_, err := db.ExecContext(ctx, `UPDATE funding SET status=?, trash_reason = CASE WHEN ? <> '' THEN ? ELSE trash_reason END, updated_at=datetime('now') WHERE id=?`, status, reason, reason, id)
 	return err
+}
+
+// SetNote stores the owner's free-text note.
+func SetNote(ctx context.Context, db *sql.DB, id int64, note string) error {
+	note = strings.TrimSpace(note)
+	if len(note) > 2000 {
+		note = note[:2000]
+	}
+	_, err := db.ExecContext(ctx, `UPDATE funding SET user_note=?, updated_at=datetime('now') WHERE id=?`, note, id)
+	return err
+}
+
+// SetVote stores the owner's thumbs (1, -1 or 0).
+func SetVote(ctx context.Context, db *sql.DB, id int64, vote int) error {
+	if vote < -1 || vote > 1 {
+		vote = 0
+	}
+	_, err := db.ExecContext(ctx, `UPDATE funding SET vote=?, updated_at=datetime('now') WHERE id=?`, vote, id)
+	return err
+}
+
+// Get returns one entry.
+func Get(ctx context.Context, db *sql.DB, id int64) (*Entry, error) {
+	rows, err := db.QueryContext(ctx, `SELECT `+cols+` FROM funding WHERE id = ?`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out, err := scan(rows)
+	if err != nil || len(out) == 0 {
+		return nil, err
+	}
+	return &out[0], nil
 }
 
 // ReportSection renders the block appended to the weekly email: deadlines in the

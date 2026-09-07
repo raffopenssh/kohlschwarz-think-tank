@@ -193,3 +193,64 @@ details.runs>summary h2{display:inline;margin:0}
 .run time{font-variant-numeric:tabular-nums}
 .run .log{grid-column:1/-1}.run .log summary{cursor:pointer;color:var(--muted);font-size:.8rem}
 .run pre{font-size:.75rem;white-space:pre-wrap;margin:.3rem 0 0;max-height:14rem;overflow:auto}
+
+/* ---- owner feedback row: thumbs · note · status · trash ---- */
+.react{margin-top:.45rem}
+.react-row{display:flex;align-items:center;gap:.25rem;flex-wrap:wrap}
+.react form{display:contents}
+.react .vote{display:inline-flex;gap:0;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--bg)}
+.react .ib{background:transparent;border:0;border-radius:8px;color:var(--faint);padding:0 .55em;min-height:34px;min-width:34px;justify-content:center;gap:.3em;font-size:.8rem;transition:color .15s,background .15s,transform .1s}
+.react .vote .ib{border-radius:0;min-width:40px}
+.react .vote .ib+.ib{border-left:1px solid var(--line)}
+@media (hover:hover){.react .ib:hover{color:var(--fg);background:var(--chip)}}
+.react .ib:active{transform:scale(.92)}
+.react .ib:focus-visible{outline:2px solid var(--s70);outline-offset:-2px}
+.react .ib.on{color:#fff}
+.react .vote .ib[value="1"].on{background:var(--s90)}
+.react .vote .ib[value="-1"].on{background:var(--soon-fg)}
+.react .ib.on svg.i{fill:currentColor;fill-opacity:.25}
+.react .note-tog.has{color:var(--link)}
+.react .note-tog[aria-expanded=true]{color:var(--fg);background:var(--chip)}
+.react .trash{margin-left:auto}
+.react .stat select{font:inherit;font-size:.8rem;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:.3em 1.6em .3em .7em;min-height:34px;appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238c959f' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .45em center;background-size:.9em}
+.react .stat select:focus-visible{outline:2px solid var(--s70);outline-offset:1px}
+.react .saved{font-size:.75rem;color:var(--s90);opacity:0;transition:opacity .25s;min-width:0}
+.react .saved.show{opacity:1}
+.react .saved.err{color:var(--soon-fg)}
+.js .react .nojs{display:none}
+/* note */
+.react .note-form{display:flex;gap:.4rem;align-items:flex-start;margin-top:.35rem;animation:in .2s ease both}
+.react .note-form[hidden]{display:none}
+.react textarea{flex:1;min-width:0;font:inherit;font-size:.88rem;line-height:1.45;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:.5em .7em;resize:none;min-height:38px;max-height:14em;overflow:auto;field-sizing:content;transition:border-color .15s,box-shadow .15s}
+.react textarea:focus{outline:0;border-color:var(--link);box-shadow:0 0 0 3px color-mix(in srgb,var(--link) 18%,transparent)}
+.react textarea::placeholder{color:var(--faint)}
+.react .note-form.dirty textarea{border-color:var(--s40)}
+/* one-time "why?" prompt after trashing */
+.react .why-ask{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem;margin-top:.4rem;padding:.5rem .6rem;border-radius:10px;background:var(--soon);color:var(--soon-fg);font-size:.82rem;animation:in .2s ease both}
+.react .why-ask[hidden]{display:none}
+.react .why-ask .q{font-weight:600}.react .why-ask .q small{font-weight:400;opacity:.8}
+.react .why-ask .chips{display:flex;flex-wrap:wrap;gap:.3rem}
+.react .why-ask .chips button{font-size:.78rem;border-radius:999px;padding:.25em .7em;min-height:30px;background:var(--bg);border-color:color-mix(in srgb,var(--soon-fg) 35%,transparent);color:var(--fg)}
+.react .why-ask .chips button:hover,.react .why-ask .chips button.on{background:var(--soon-fg);color:#fff;border-color:var(--soon-fg)}
+.react .why-ask .skip{margin-left:auto;background:transparent;border:0;color:var(--soon-fg);font-size:.78rem;min-height:30px;padding:.2em .5em;text-decoration:underline;text-underline-offset:2px}
+.card.leaving{opacity:.35;transition:opacity .3s}
+.card.hidden-row .react .trash .ib{color:var(--s70)}
+.card.voted-up{box-shadow:inset 3px 0 0 var(--s90)}
+.card.voted-down{box-shadow:inset 3px 0 0 var(--soon-fg)}
+@media (max-width:640px){
+  .react .ib{min-height:40px;min-width:40px}
+  .react .vote .ib{min-width:46px}
+  .react .stat select{min-height:40px}
+  .react .trash .lbl,.react .note-tog .lbl{display:none}
+  .react .why-ask .skip{flex:1 1 100%;margin:0;text-align:right}
+}
+/* feedback summary panel */
+details.fb{margin:.4rem 0 0}
+details.fb>summary{display:flex;align-items:center;gap:.5em}
+details.fb .n{font-weight:normal;color:var(--faint)}
+.fblog{list-style:none;margin:.4rem 0 0;padding:0;font-size:.82rem}
+.fblog li{display:grid;grid-template-columns:auto 1fr auto;gap:.5rem;padding:.3rem 0;border-top:1px solid var(--line);align-items:baseline}
+.fblog .act{font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:.1em .45em;border-radius:4px;background:var(--chip);color:var(--chip-fg)}
+.fblog .act.up{background:var(--s90);color:#fff}.fblog .act.down,.fblog .act.trash{background:var(--soon-fg);color:#fff}
+.fblog time{font-family:var(--mono);font-size:.75rem}

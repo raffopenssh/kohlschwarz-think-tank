@@ -1,0 +1,26 @@
+{{/* react: owner feedback row for one radar card.
+     dict keys: Owner Radar(job|grant) ID Vote Note Hidden Reason [Statuses Status]
+     Works without JS (plain forms); radar.js upgrades it to inline fetch + reason prompt. */}}
+{{define "react"}}{{if .Owner}}
+<div class="react" data-radar="{{.Radar}}" data-id="{{.ID}}">
+  <div class="react-row">
+    <form class="vote" method="post" action="/admin/{{if eq .Radar "job"}}jobs{{else}}funding{{end}}/vote/{{.ID}}">
+      <button name="vote" value="1" class="ib{{if eq .Vote 1}} on{{end}}" aria-pressed="{{if eq .Vote 1}}true{{else}}false{{end}}" title="Good match — more like this" aria-label="thumbs up"><svg class="i"><use href="#i-up"/></svg></button>
+      <button name="vote" value="-1" class="ib{{if eq .Vote -1}} on{{end}}" aria-pressed="{{if eq .Vote -1}}true{{else}}false{{end}}" title="Poor match — fewer like this" aria-label="thumbs down"><svg class="i"><use href="#i-down"/></svg></button>
+    </form>
+    <button type="button" class="ib note-tog{{if .Note}} has{{end}}" aria-expanded="{{if .Note}}true{{else}}false{{end}}" title="{{if .Note}}Edit note{{else}}Add a note{{end}}"><svg class="i"><use href="#i-pen"/></svg><span class="lbl">note</span></button>
+    {{if .Statuses}}<form class="stat" method="post" action="/admin/funding/status/{{.ID}}"><select name="status" aria-label="status">{{$cur := .Status}}{{range .Statuses}}<option value="{{.}}"{{if eq . $cur}} selected{{end}}>{{.}}</option>{{end}}</select><button class="nojs">set</button></form>{{end}}
+    {{if eq .Radar "job"}}<form class="trash" method="post" action="/admin/jobs/hide/{{.ID}}">{{if .Hidden}}<input type="hidden" name="unhide" value="1"><button class="ib txt" title="Put this posting back on the list"><svg class="i"><use href="#i-undo"/></svg><span class="lbl">restore</span></button>{{else}}<button class="ib txt" title="Remove from the list (not relevant). Find it again under “show dismissed”."><svg class="i"><use href="#i-trash"/></svg><span class="lbl">not relevant</span></button>{{end}}</form>{{end}}
+    <span class="saved" aria-live="polite"></span>
+  </div>
+  <form class="note-form" method="post" action="/admin/{{if eq .Radar "job"}}jobs{{else}}funding{{end}}/note/{{.ID}}"{{if not .Note}} hidden{{end}}>
+    <textarea name="note" rows="1" placeholder="Your note — ⌘/Ctrl+Enter saves, Esc closes" aria-label="note">{{.Note}}</textarea>
+    <button class="nojs">save</button>
+  </form>
+  <div class="why-ask" hidden data-reason="{{.Reason}}">
+    <span class="q">Why? <small>(optional, asked once)</small></span>
+    <span class="chips">{{range $.Reasons}}<button type="button" data-reason="{{.Key}}">{{.Label}}</button>{{end}}</span>
+    <button type="button" class="skip">skip</button>
+  </div>
+</div>
+{{else if .Note}}<div class="line"><svg class="i"><use href="#i-pen"/></svg><span class="dim">{{.Note}}</span></div>{{end}}{{end}}

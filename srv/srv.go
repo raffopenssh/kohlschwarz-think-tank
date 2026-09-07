@@ -323,9 +323,23 @@ func (s *Server) HandleTrackClick(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"ok":true}`))
 }
 
+// tmplDict builds a map from key/value pairs for passing several values to a partial.
+func tmplDict(kv ...any) map[string]any {
+	m := make(map[string]any, len(kv)/2)
+	for i := 0; i+1 < len(kv); i += 2 {
+		if k, ok := kv[i].(string); ok {
+			m[k] = kv[i+1]
+		}
+	}
+	return m
+}
+
 func (s *Server) renderTemplate(w http.ResponseWriter, name string, data any) error {
 	path := filepath.Join(s.TemplatesDir, name)
-	tmpl, err := template.New(name).Funcs(template.FuncMap{"runAgo": runAgo}).ParseFiles(path)
+	files := []string{path}
+	partials, _ := filepath.Glob(filepath.Join(s.TemplatesDir, "_*.html")) // shared {{define}} blocks
+	files = append(files, partials...)
+	tmpl, err := template.New(name).Funcs(template.FuncMap{"runAgo": runAgo, "dict": tmplDict}).ParseFiles(files...)
 	if err != nil {
 		return fmt.Errorf("parse template %q: %w", name, err)
 	}
@@ -640,8 +654,12 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("POST /admin/jobs/voucher", s.HandleAdminJobsVoucher)
 	mux.HandleFunc("POST /admin/jobs/email", s.HandleAdminJobsEmail)
 	mux.HandleFunc("POST /admin/jobs/hide/{id}", s.HandleAdminJobsHide)
+	mux.HandleFunc("POST /admin/jobs/vote/{id}", s.HandleAdminJobsVote)
+	mux.HandleFunc("POST /admin/jobs/note/{id}", s.HandleAdminJobsNote)
 	mux.HandleFunc("GET /admin/funding", s.HandleAdminFunding)
 	mux.HandleFunc("POST /admin/funding/status/{id}", s.HandleAdminFundingStatus)
+	mux.HandleFunc("POST /admin/funding/vote/{id}", s.HandleAdminFundingVote)
+	mux.HandleFunc("POST /admin/funding/note/{id}", s.HandleAdminFundingNote)
 	mux.HandleFunc("POST /admin/funding/reseed", s.HandleAdminFundingReseed)
 	if _, err := funding.Seed(context.Background(), s.DB); err != nil {
 		slog.Warn("funding seed", "error", err)

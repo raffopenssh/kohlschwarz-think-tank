@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Funding radar · admin</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/static/radar.css?v=17">
+<link rel="stylesheet" href="/static/radar.css?v=19">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -16,6 +16,9 @@
 <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
 <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
 <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/></symbol>
+<symbol id="i-pen" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></symbol>
 <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/></symbol>
 </svg>
 
@@ -24,6 +27,11 @@
 <p class="lead">Grants · prizes · accelerators · investors for Veridical Earth / kohlschwarz.at apps. Hand-curated &amp; hand-scored (2026-09-03), no LLM, €0/month. Score = suitability <em>now</em> (solo founder, no entity, Vienna + CAR). Deadlines ≤ 60 days for score ≥ 40 go into the Monday radar email.</p>
 {{if .Msg}}<p class="msg">{{.Msg}}</p>{{end}}
 {{if .Owner}}<div class="bar"><form method="post" action="/admin/funding/reseed"><button><svg class="i"><use href="#i-refresh"/></svg>reseed from code</button></form> <span class="tiny">refreshes curated fields, keeps your status/notes</span></div>{{else}}<p class="tiny">read-only view</p>{{end}}
+
+{{if .Owner}}<details class="fb"><summary>What you’ve taught the radar <span class="n">{{.Feedback.Up}} 👍 · {{.Feedback.Down}} 👎 · {{.Feedback.Trashed}} trashed</span></summary>
+{{if .Feedback.Reasons}}<p class="meta">Trash reasons: {{range $i, $c := .Feedback.Reasons}}{{if $i}} · {{end}}<b>{{$c.Label}}</b> ×{{$c.N}}{{end}}</p>{{end}}
+{{if .Feedback.Recent}}<ul class="fblog">{{range .Feedback.Recent}}<li><span class="act {{.Action}}">{{.Action}}</span> <span>{{.Title}}{{if .Org}} <span class="dim">· {{.Org}}</span>{{end}}{{if .Reason}} <span class="tag">{{.Reason}}</span>{{end}}{{if .Detail}} <span class="dim">— {{.Detail}}</span>{{end}}</span><time class="dim">{{slice .At 0 10}}</time></li>{{end}}</ul>{{else}}<p class="meta">No feedback yet. Thumbs, notes and trash reasons land here — so you can see your own patterns.</p>{{end}}
+</details>{{end}}
 
 {{if .Upcoming}}
 <h2>Due in the next 60 days <span class="n">{{len .Upcoming}}</span></h2>
@@ -52,11 +60,12 @@
 <button data-f="prize">prize</button>
 <button data-f="program">program</button>
 <button data-f="vc">vc</button>
+<button data-f="up" title="Entries you gave a thumbs-up">liked</button>
 <span class="count" id="count"></span>
 </div>
 <div class="list">
 {{range .Rows}}{{$sc := .Score}}{{$dl := .DaysLeft}}
-<article class="card{{if or (eq .Status "skip") (eq .Status "rejected") (eq .Status "won")}} done{{end}}" id="f{{.ID}}" data-score="{{$sc}}" data-track="{{.Track}}" data-kind="{{.Kind}}" data-status="{{.Status}}" data-soon="{{if and (ne .Deadline "") (not .Expired) (le $dl 60)}}1{{end}}">
+<article class="card{{if or (eq .Status "skip") (eq .Status "rejected") (eq .Status "won")}} done{{end}}" id="f{{.ID}}" data-score="{{$sc}}" data-track="{{.Track}}" data-kind="{{.Kind}}" data-status="{{.Status}}" data-id="{{.ID}}" data-vote="{{.Vote}}" data-asked="{{if .TrashReason}}1{{end}}" data-soon="{{if and (ne .Deadline "") (not .Expired) (le $dl 60)}}1{{end}}">
   <span class="score {{if ge $sc 80}}s90{{else if ge $sc 60}}s70{{else if ge $sc 35}}s40{{else}}s0{{end}}">{{$sc}}</span>
   <a class="title" href="{{.URL}}" target="_blank" rel="noopener">{{.Name}}<svg class="i"><use href="#i-ext"/></svg></a>
   <div class="tags">
@@ -71,15 +80,11 @@
   <div class="more">
     {{if .Eligibility}}<div class="line el"><svg class="i"><use href="#i-check"/></svg><span>{{.Eligibility}}</span></div>{{end}}
     {{if .Why}}<div class="line sc"><svg class="i"><use href="#i-target"/></svg><span>{{.Why}}</span></div>{{end}}
-    {{if $.Owner}}<div class="actions"><form method="post" action="/admin/funding/status/{{.ID}}">
-      {{$cur := .Status}}<select name="status" aria-label="status">{{range $.Statuses}}<option value="{{.}}"{{if eq . $cur}} selected{{end}}>{{.}}</option>{{end}}</select>
-      <input name="note" value="{{.UserNote}}" placeholder="your note">
-      <button>save</button>
-    </form></div>{{else if .UserNote}}<div class="line"><span class="dim">note: {{.UserNote}}</span></div>{{end}}
   </div>
+{{template "react" (dict "Owner" $.Owner "Reasons" $.Reasons "Radar" "grant" "ID" .ID "Vote" .Vote "Note" .UserNote "Reason" .TrashReason "Statuses" $.Statuses "Status" .Status)}}
 </article>
 {{end}}
 </div>
-<script src="/static/radar.js?v=1"></script>
+<script src="/static/radar.js?v=5"></script>
 </body>
 </html>

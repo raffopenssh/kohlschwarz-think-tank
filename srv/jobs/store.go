@@ -37,6 +37,9 @@ type Row struct {
 	CheckedAt       *string // last page re-check (signals.go)
 	ClosedAt        *string // page says closed / gone, nil = live
 	Reposted        bool    // source shows it re-advertised
+	Vote            int     // owner thumbs: 1 up, -1 down, 0 none
+	UserNote        string  // owner's free-text note
+	TrashReason     string  // why it was hidden ('' = not given)
 	Events          []Event // change history (loaded by AttachEvents)
 	latestFirstSeen string  // newest first_seen among merged copies (Dedupe)
 	Dupes           int     // extra copies collapsed by Dedupe (not stored)
@@ -106,7 +109,7 @@ func (r Row) IsNew() bool {
 	return err == nil && time.Since(t) < 8*24*time.Hour
 }
 
-const rowCols = `id, url, source, title, org, location, snippet, lang, region, kind, posted, deadline, first_seen, last_seen, score, why, brief, reported_at, hidden, salary, applicants, checked_at, closed_at, reposted`
+const rowCols = `id, url, source, title, org, location, snippet, lang, region, kind, posted, deadline, first_seen, last_seen, score, why, brief, reported_at, hidden, salary, applicants, checked_at, closed_at, reposted, vote, user_note, trash_reason`
 
 func scanRows(rows *sql.Rows) ([]Row, error) {
 	defer rows.Close()
@@ -114,7 +117,7 @@ func scanRows(rows *sql.Rows) ([]Row, error) {
 	for rows.Next() {
 		var r Row
 		var hidden, reposted int64
-		if err := rows.Scan(&r.ID, &r.URL, &r.Source, &r.Title, &r.Org, &r.Location, &r.Snippet, &r.Lang, &r.Region, &r.Kind, &r.Posted, &r.Deadline, &r.FirstSeen, &r.LastSeen, &r.Score, &r.Why, &r.Brief, &r.ReportedAt, &hidden, &r.Salary, &r.Applicants, &r.CheckedAt, &r.ClosedAt, &reposted); err != nil {
+		if err := rows.Scan(&r.ID, &r.URL, &r.Source, &r.Title, &r.Org, &r.Location, &r.Snippet, &r.Lang, &r.Region, &r.Kind, &r.Posted, &r.Deadline, &r.FirstSeen, &r.LastSeen, &r.Score, &r.Why, &r.Brief, &r.ReportedAt, &hidden, &r.Salary, &r.Applicants, &r.CheckedAt, &r.ClosedAt, &reposted, &r.Vote, &r.UserNote, &r.TrashReason); err != nil {
 			return nil, err
 		}
 		r.Hidden = hidden == 1
@@ -255,9 +258,42 @@ func Unreported(ctx context.Context, db *sql.DB, minScore int) ([]Row, error) {
 	return scanRows(rows)
 }
 
-func SetHidden(ctx context.Context, db *sql.DB, id int64, hidden bool) error {
-	_, err := db.ExecContext(ctx, `UPDATE job_postings SET hidden = ? WHERE id = ?`, hidden, id)
+// SetHidden trashes/restores a posting; reason is kept (only overwritten when non-empty).
+func SetHidden(ctx context.Context, db *sql.DB, id int64, hidden bool, reason string) error {
+	_, err := db.ExecContext(ctx, `UPDATE job_postings SET hidden = ?, trash_reason = CASE WHEN ? <> '' THEN ? ELSE trash_reason END WHERE id = ?`, hidden, reason, reason, id)
 	return err
+}
+
+// SetVote stores the owner's thumbs (1, -1 or 0).
+func SetVote(ctx context.Context, db *sql.DB, id int64, vote int) error {
+	if vote < -1 || vote > 1 {
+		vote = 0
+	}
+	_, err := db.ExecContext(ctx, `UPDATE job_postings SET vote = ? WHERE id = ?`, vote, id)
+	return err
+}
+
+// SetNote stores the owner's free-text note.
+func SetNote(ctx context.Context, db *sql.DB, id int64, note string) error {
+	note = strings.TrimSpace(note)
+	if len(note) > 2000 {
+		note = note[:2000]
+	}
+	_, err := db.ExecContext(ctx, `UPDATE job_postings SET user_note = ? WHERE id = ?`, note, id)
+	return err
+}
+
+// Get returns one posting.
+func Get(ctx context.Context, db *sql.DB, id int64) (*Row, error) {
+	rows, err := db.QueryContext(ctx, `SELECT `+rowCols+` FROM job_postings WHERE id = ?`, id)
+	if err != nil {
+		return nil, err
+	}
+	out, err := scanRows(rows)
+	if err != nil || len(out) == 0 {
+		return nil, err
+	}
+	return &out[0], nil
 }
 
 func MarkReported(ctx context.Context, db *sql.DB, ids []int64) error {

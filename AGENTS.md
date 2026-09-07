@@ -13,7 +13,7 @@ journalctl -u srv -n 50 --no-pager
 - Local check: `curl -u admin:$(grep ADMIN_PASSWORD .env|cut -d= -f2) localhost:8000/admin/jobs`. Headless browser can't send basic auth → save HTML to a tmp dir and serve with `busybox httpd` on a free port (8765 is often taken).
 - If restart loops with "address already in use": `sudo ss -ltnp | grep :8000` and kill the orphan `server`.
 - Templates are parsed per request (`renderTemplate`, FuncMap: `runAgo`) → template/CSS/JS edits need no rebuild, Go edits do. Bump `?v=` on `radar.css`/`radar.js` links after changes.
-- Migrations: `db/migrations/NNN-name.sql`, applied at startup; end with `INSERT OR IGNORE INTO migrations …`. Latest: 011 (job_events + salary/applicants/checked_at/closed_at).
+- Migrations: `db/migrations/NNN-name.sql`, applied at startup; end with `INSERT OR IGNORE INTO migrations …`. Latest: 012 (feedback: vote/user_note/trash_reason on job_postings + funding, feedback_log).
 - Commit with `git add <files>` explicitly (blind `git add -A` is blocked).
 
 ## Layout
@@ -25,6 +25,9 @@ srv/funding_handlers.go    /admin/funding*
 srv/jobs/                  sources.go (71 feeds) · fetch.go · match.go (keyword filter) · rank.go (LLM, budget)
                            dedupe.go (union-find: canonical URL + org|title + synonym Jaccard) · report.go (weekly email, Scheduler)
                            signals.go (hiring-difficulty tags, CheckPending page re-check, no LLM) · status.go · store.go (Row, Run, events)
+srv/feedback/              feedback.go: Reasons (trash-reason chips), Log/Recent/ReasonCounts/Totals, PromptHints (owner verdicts → rank prompt)
+srv/feedback_handlers.go   /admin/{jobs,funding}/{vote,note}/{id}, jobs/hide, funding/status — JSON when Accept: application/json, else redirect
+srv/templates/_react.html  shared {{define "react"}} partial (thumbs · note · status · trash · one-time "why?"); renderTemplate globs _*.html
 srv/funding/               seed.go (hand-curated entries) · verified.go · store.go · verification-*/ (raw notes)
 srv/templates/*.html       jobs.html + funding.html share static/radar.css + radar.js (chips, collapse, live status poll)
 db/                        sqlite open + migrations; dbgen = sqlc output for public-site tables only (radars use raw sql)
@@ -35,6 +38,7 @@ db/                        sqlite open + migrations; dbgen = sqlc output for pub
 - List is deduped at render time (`jobs.Dedupe`), never in the DB; merged copies show as “+N copies merged”. Add multilingual role words to `synonyms` in dedupe.go, add a case to `dedupe_test.go`.
 - Hiring signals: `Upsert` writes `job_events` (deadline_extended/shortened, reposted, reappeared, reopened); `Row.Signals()` → tags, `Row.Verdict()` → `hard to fill | closed | gone` ribbon + `unfilled`/`live only` chips; email gets "STILL UNFILLED" / "CLOSED THIS WEEK" for rows with an event that week. Signals only for score ≥ 35 and kind ≠ other; LinkedIn datePosted shifts < 14 d are ignored. Add a case to `signals_test.go` when tuning thresholds.
 - Every report/UI cost line must use `Cost.CostLine()`.
+- Owner feedback (both radars): 👍/👎 (`vote`), inline autosaving note (`user_note`), trash = jobs `hidden` / funding `skip|rejected`. After the first trash of an item the UI asks once for a reason chip (`trash_reason`, `ask_reason` in JSON reply; keys in `feedback.Reasons`). Everything is appended to `feedback_log`; `RankPending` appends `feedback.PromptHints` (last 40 job verdicts) to the system prompt. "What you've taught the radar" panel above the list summarises it.
 - Adding a source: append to `Sources` in sources.go; LinkedIn sleeps 6s between requests.
 
 ## Funding radar conventions
