@@ -56,7 +56,7 @@ SCORING 0-100:
   0-34: everything else.
 
 OUTPUT: a JSON array, one object per input id, no prose:
-[{"id":<int>,"score":<0-100>,"region":"austria|ssa|global|other","kind":"director|consultancy|senior|pathway|other","why":"English, terse, <=14 words, no full sentences. Austrian authority postings: unit as named in the posting → park (or 'no park link'); verdict, e.g. 'Abt. Naturschutz RU5 → NP Donau-Auen; Referent-level legal post'. Non-Austrian: level + fit, e.g. 'LMMA finance consultancy, not PA management'"}]`
+[{"id":<int>,"score":<0-100>,"region":"austria|ssa|global|other","kind":"director|consultancy|senior|pathway|other","why":"English, terse, <=14 words, no full sentences, do NOT restate the title — add what it lacks (level, employer type, fit). Austrian authority postings: unit as named in the posting → park (or 'no park link'); verdict, e.g. 'Abt. Naturschutz RU5 → NP Donau-Auen; Referent-level legal post'. Non-Austrian: level + fit, e.g. 'LMMA finance consultancy, not PA management'"}]`
 
 type rankResult struct {
 	ID     int64  `json:"id"`

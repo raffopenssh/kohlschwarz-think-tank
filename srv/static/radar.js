@@ -7,7 +7,7 @@
     t.addEventListener('click',function(){var o=c.classList.toggle('open');t.setAttribute('aria-expanded',o);});
   });
   // deep link (#fNN) opens that card
-  if(location.hash){var h=document.getElementById(location.hash.slice(1));if(h){h.classList.add('open');h.scrollIntoView({block:'center'});}}
+  if(location.hash){var h=document.getElementById(location.hash.slice(1));if(h){h.classList.add('open');var d=h.querySelector('details');if(d)d.open=true;h.scrollIntoView({block:'center'});}}
   // filters
   var bar=document.getElementById('filters'),count=document.getElementById('count');if(!bar)return;
   var bs=[].slice.call(bar.querySelectorAll('button'));
