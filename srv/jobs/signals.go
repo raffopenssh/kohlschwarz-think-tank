@@ -53,6 +53,10 @@ func (r Row) Signals() []Signal {
 		return out
 	}
 
+	// Hiring signals only make sense for actual vacancies that made the list.
+	if r.ScoreVal() < BriefMinScore || r.Kind == "other" || r.Kind == "news" {
+		return out
+	}
 	age := r.AgeDays()
 	// Change history.
 	ext, short, rep, reapp, reopen, salUp, salChg := 0, 0, 0, 0, 0, 0, 0
@@ -65,7 +69,11 @@ func (r Row) Signals() []Signal {
 		case "deadline_shortened":
 			short++
 		case "reposted", "readvertised":
-			rep++
+			// LinkedIn shifts datePosted by a few days when it re-indexes an
+			// ad; only a jump of 14+ days is a real re-advertisement.
+			if daysBetween(e.Old, e.New) >= 14 || e.Old == "" {
+				rep++
+			}
 		case "reappeared":
 			reapp++
 		case "reopened":
@@ -86,7 +94,7 @@ func (r Row) Signals() []Signal {
 		}
 		add("extended", lbl, fmt.Sprintf("Closing date moved from %s to %s — the recruiter did not fill it in the first round.", lastExt.Old, lastExt.New), true)
 	}
-	if rep > 0 || r.Reposted || reapp > 0 || reopen > 0 {
+	if rep > 0 || reapp > 0 || reopen > 0 {
 		title := "The source shows a newer posted date, or the ad came back after disappearing — re-advertised."
 		if reopen > 0 {
 			title = "Listed again after the page had said closed — re-opened."
@@ -95,8 +103,7 @@ func (r Row) Signals() []Signal {
 	} else if gap := r.RepostGapDays(); gap >= 21 {
 		add("readvertised", "re-advertised", fmt.Sprintf("A fresh copy of this job appeared %d days after the first one — re-advertised on another board or with a new id.", gap), true)
 	}
-	if r.Deadline != "" && r.Deadline < today {
-		d := daysBetween(r.Deadline, today)
+	if d := daysBetween(r.Deadline, today); r.Deadline != "" && d >= 3 {
 		add("overdue", fmt.Sprintf("deadline passed %dd ago, still listed", d), "The stated closing date is in the past but the ad is still online — often means no appointment yet.", true)
 	}
 	if r.Applicants != nil && age >= 10 {
@@ -312,8 +319,12 @@ func checkPage(ctx context.Context, r Row) pageCheck {
 	if closedRe.MatchString(text) {
 		pc.gone = true
 	}
+	li := strings.Contains(r.URL, "linkedin.com")
 	for _, m := range jsonLDRe.FindAllStringSubmatch(raw, -1) {
 		if m[1] == "validThrough" {
+			if li {
+				continue // LinkedIn's validThrough is a synthetic posted+180d, not a closing date
+			}
 			pc.validThru = m[2]
 		} else {
 			pc.datePosted = m[2]
@@ -452,4 +463,12 @@ func appsText(s string) string {
 func (r Row) SignalsJSON() string {
 	b, _ := json.Marshal(r.Signals())
 	return string(b)
+}
+
+// CheckedDate renders CheckedAt as a date ("" if never checked).
+func (r Row) CheckedDate() string {
+	if r.CheckedAt != nil && len(*r.CheckedAt) >= 10 {
+		return (*r.CheckedAt)[:10]
+	}
+	return ""
 }

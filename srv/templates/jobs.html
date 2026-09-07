@@ -79,7 +79,7 @@
     <div class="body">
       {{if $it}}<dl>{{range $it}}<div><dt>{{.Label}}</dt><dd>{{.Text}}</dd></div>{{end}}</dl>{{else if $ctx}}<p>{{$ctx}}</p>{{end}}
       {{if .Events}}<ul class="hist">{{range .Events}}<li>{{.Label}}</li>{{end}}</ul>{{end}}
-      <div class="line meta"><svg class="i"><use href="#i-clock"/></svg><span>since <b>{{.Since}}</b>{{if .Posted}} (posted {{.Posted}}){{end}}{{with .CheckedAt}} · page checked <b>{{slice . 0 10}}</b>{{end}} · last seen <b title="{{.LastSeen}} UTC">{{.SeenAgo}}</b> · via {{.Source}}{{if .Dupes}} · +{{.Dupes}} {{if eq .Dupes 1}}copy{{else}}copies{{end}} merged{{end}}</span>
+      <div class="line meta"><svg class="i"><use href="#i-clock"/></svg><span>since <b>{{.Since}}</b>{{if .Posted}} (posted {{.Posted}}){{end}}{{with .CheckedDate}} · page checked <b>{{.}}</b>{{end}} · last seen <b title="{{.LastSeen}} UTC">{{.SeenAgo}}</b> · via {{.Source}}{{if .Dupes}} · +{{.Dupes}} {{if eq .Dupes 1}}copy{{else}}copies{{end}} merged{{end}}</span>
         {{if $.Owner}}<form class="dismiss" method="post" action="/admin/jobs/hide/{{.ID}}">{{if .Hidden}}<input type="hidden" name="unhide" value="1"><button class="ghost" title="Put this posting back on the list"><svg class="i"><use href="#i-undo"/></svg>restore to list</button>{{else}}<button class="ghost" title="Remove this posting from the list (not relevant). Find it again under “show dismissed”."><svg class="i"><use href="#i-trash"/></svg>not relevant</button>{{end}}</form>{{end}}
       </div>
     </div>
@@ -96,6 +96,6 @@
 {{end}}
 </ul>
 </details>
-<script src="/static/radar.js?v=3"></script>
+<script src="/static/radar.js?v=4"></script>
 </body>
 </html>

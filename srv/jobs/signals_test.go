@@ -17,40 +17,54 @@ func keys(r Row) map[string]bool {
 }
 
 func TestSignals(t *testing.T) {
+	sc := int64(60)
 	// fresh posting: nothing
-	if k := keys(Row{FirstSeen: ago(3), LastSeen: ago(0)}); len(k) != 0 {
+	if k := keys(Row{Score: &sc, Kind: "director", FirstSeen: ago(3), LastSeen: ago(0)}); len(k) != 0 {
 		t.Errorf("fresh: %v", k)
 	}
+	// news items / low scores never get hiring signals
+	if k := keys(Row{Score: &sc, Kind: "other", FirstSeen: ago(80), LastSeen: ago(0), Deadline: day(-20)}); len(k) != 0 {
+		t.Errorf("other kind: %v", k)
+	}
+	// LinkedIn re-index (4 d shift) is not a re-advertisement; 20 d is
+	r0 := Row{Score: &sc, Kind: "director", FirstSeen: ago(20), LastSeen: ago(0), Events: []Event{{Kind: "reposted", Old: day(-8), New: day(-4)}}}
+	if keys(r0)["readvertised"] {
+		t.Error("4d repost counted")
+	}
+	r0.Events[0].Old = day(-30)
+	if !keys(r0)["readvertised"] {
+		t.Error("26d repost ignored")
+	}
 	// extended deadline + overdue → hard to fill
-	r := Row{FirstSeen: ago(50), LastSeen: ago(0), Deadline: day(-4), Events: []Event{{Kind: "deadline_extended", Old: day(-30), New: day(-4)}}}
+	r := Row{Score: &sc, Kind: "director", FirstSeen: ago(50), LastSeen: ago(0), Deadline: day(-4), Events: []Event{{Kind: "deadline_extended", Old: day(-30), New: day(-4)}}}
 	k := keys(r)
 	if !k["extended"] || !k["overdue"] || !k["long"] || r.Verdict() != "hard to fill" {
 		t.Errorf("extended: %v verdict=%q", k, r.Verdict())
 	}
 	// gone from sources
-	r = Row{FirstSeen: ago(30), LastSeen: ago(9)}
+	r = Row{Score: &sc, Kind: "director", FirstSeen: ago(30), LastSeen: ago(9)}
 	if r.Verdict() != "gone" {
 		t.Errorf("gone: %q", r.Verdict())
 	}
 	// closed wins over everything
 	c := ago(1)
-	r = Row{FirstSeen: ago(90), LastSeen: ago(0), ClosedAt: &c, Deadline: day(-10)}
+	r = Row{Score: &sc, Kind: "director", FirstSeen: ago(90), LastSeen: ago(0), ClosedAt: &c, Deadline: day(-10)}
 	if r.Verdict() != "closed" || len(r.Signals()) != 1 {
 		t.Errorf("closed: %v", r.Signals())
 	}
 	// thin field on linkedin after 10 days
 	n := int64(0)
-	r = Row{FirstSeen: ago(12), LastSeen: ago(0), Applicants: &n}
+	r = Row{Score: &sc, Kind: "director", FirstSeen: ago(12), LastSeen: ago(0), Applicants: &n}
 	if k := keys(r); !k["fewapps"] || r.Verdict() != "hard to fill" {
 		t.Errorf("fewapps: %v", k)
 	}
 	// but not on day 2
-	r = Row{FirstSeen: ago(2), LastSeen: ago(0), Applicants: &n}
+	r = Row{Score: &sc, Kind: "director", FirstSeen: ago(2), LastSeen: ago(0), Applicants: &n}
 	if k := keys(r); k["fewapps"] {
 		t.Errorf("fewapps too early: %v", k)
 	}
 	// repost gap via dedupe: copy surfaced 25 days after original
-	rows := Dedupe([]Row{{URL: "https://a/1", Org: "X", Title: "Park Director", FirstSeen: ago(30), LastSeen: ago(0)}, {URL: "https://b/2", Org: "X", Title: "Park Director", FirstSeen: ago(5), LastSeen: ago(0)}})
+	rows := Dedupe([]Row{{URL: "https://a/1", Score: &sc, Kind: "director", Org: "X", Title: "Park Director", FirstSeen: ago(30), LastSeen: ago(0)}, {URL: "https://b/2", Org: "X", Title: "Park Director", FirstSeen: ago(5), LastSeen: ago(0)}})
 	if len(rows) != 1 || rows[0].RepostGapDays() != 25 || !keys(rows[0])["readvertised"] {
 		t.Errorf("repost gap: %d %v", rows[0].RepostGapDays(), keys(rows[0]))
 	}
