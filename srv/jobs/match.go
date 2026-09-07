@@ -34,9 +34,50 @@ var negRe = regexp.MustCompile(`(?i)\b(intern(ship)?|praktik\w*|stagiaire|stage\
 // tenderNegRe: works / supplies tenders that merely mention a park.
 var tenderNegRe = regexp.MustCompile(`(?i)\b(construction|bau\w*|travaux|roads?|stra[sß]e\w*|route|bridge|br[uü]cke|supply|supplies|lieferung|fourniture|equipment|ausr[uü]stung|vehicles?|fahrzeug\w*|v[eé]hicule|cleaning|reinigung|nettoyage|maintenance|instandhaltung|entretien|catering|printing|druck|software|hardware|fencing|z[aä]une?|cl[oô]ture|toilet|sanit[aä]r|renovation|sanierung|electric\w*|elektro\w*|heating|heizung|water\s+supply|wasserversorgung|sewage|abwasser|waste|abfall|d[eé]chets|security\s+services|insurance|versicherung|assurance|fuel|kraftstoff|uniform\w*|furniture|m[oö]bel|signage|beschilderung|surveying\s+works|drilling|bohr\w*)\b`)
 
+// --- Austrian public-sector pathway ----------------------------------------
+// A Referent / Amtssachverständige / Jurist post in a Land or federal nature
+// department is a realistic stepping stone to directing the national park that
+// authority co-governs. For such employers we relax the seniority test to
+// "meaningful professional role" and instead apply a stricter negative list.
+
+// atOrgRe: Austrian Land / Bund / park administrations.
+var atOrgRe = regexp.MustCompile(`(?i)(amt der|landesregierung|land (ober|nieder)?österreich|land (steiermark|kärnten|salzburg|tirol|vorarlberg|burgenland)|land oö|land nö|bundesministerium|\bbml\b|bundesforste|stadt wien|magistrat|umweltbundesamt|nationalpark|naturpark|biosphärenpark|\[land |\[bund\]|\[stadt wien\])`)
+
+// atTopicRe: department / subject signals for nature-related units.
+var atTopicRe = regexp.MustCompile(`(?i)(naturschutz|nationalpark|schutzgebiet|natura\s*2000|biodiversit|umweltschutz|umwelt(recht|abteilung|- und)|naturraum|landschaft(sschutz|spflege|splanung)|ökolog|biolog|forst|wald|wildökolog|jagd|fischerei|gewässerökolog|wasserwirtschaft|raumordnung|regionalentwicklung|regionalpolitik|ländlicher raum|agrar|land- und forstwirtschaft|nachhaltigkeit|klimaschutz|artenschutz|moor|alm|weide|abteilung 13|abt\.\s*13|abteilung 8|anlagen- und naturschutz|natur- und geisteswissenschaft|natur/landwirtschaft/technik)`)
+
+// atRoleRe: substantive professional roles (title).
+var atRoleRe = regexp.MustCompile(`(?i)(referent|sachverständig|jurist|fachexpert|fachbereich|projektleit|projektmanag|abteilungsleit|gruppenleit|bereichsleit|stabsstellenleit|leitung|leiter|geschäftsführ|direktor|höheren\s+\w*dienst|wissenschaftlichen dienst|akademi|beauftragte|gebietsbetreu|schutzgebietsbetreu|schutzgebietsmanag|nationalparkmanag|natura\s*2000|koordinat|manager|managerin|planstelle|fachkraft mit akademischer|techniker\w* mit akademischer|mit akademischer ausbildung|\bA1\b|\bv1\b|LD\s*1[4-9]|absolvent\w* (der|eines) (universität|studium)|universitätsabsolvent|boku|hochschul)`)
+
+// atNegRe: menial, junior, seasonal, clerical or unrelated titles.
+var atNegRe = regexp.MustCompile(`(?i)(reinigung|praktik|ferial|messtechnik|luftmess|laborant|ersatzkraft|karenzvertretung für die verwaltung|lehrling|lehrstelle|saison|ranger|sekretariat|kanzlei|assistenz|assistent|schreibkraft|straßenmeisterei|brückenmeisterei|bauhof|koch\b|köchin|küche|pflege|pädagog|kindergarten|kinderbetreu|ärzt|arzt|amtsärzt|schul|lehrer|kraftfahrer|hausmeister|hauswart|handwerk|facharbeiter|werkmeister|informatik|\bIT\b|it-|software|buchhalt|kassen|lohnverrechn|personalverrechn|controll|sozialarbeit|sozialbetreu|psycholog|therapeut|verkehr|straßenbau|hochbau|tiefbau|brücken|elektro|maschinen|kfz|führerschein|strafrecht|asyl|fremdenwesen|polizei|justiz|militär|bundesheer|zoll|finanz|steuer|gesundheit|krankenanstalt|klinik|veterinär|tierärzt|lebensmittel|marktamt|statistik|dolmetsch|übersetz|redakteur|kommunikation|presse|marketing|tourismus|kultur|museum|archiv|bibliothek|sport|jugend|familie|wohnbau|energie(recht|technik)?\b|strahlenschutz|luftfahrt|geolog|meteorolog|chemiker|labor|vermessung|gis\b|reinigungs|objektbetreu|sicherheitsdienst|portier|servicemitarbeit|gastro)`)
+
+// isAustrianAuthority reports whether the posting comes from a Land / Bund /
+// park administration where a professional (non-leadership) role counts.
+func isAustrianAuthority(p Posting) bool {
+	return p.Region == "austria" && atOrgRe.MatchString(p.Org+" "+p.Snippet+" "+p.Source)
+}
+
+// matchAustrianPathway: nature topic + substantive professional role, no junk.
+func matchAustrianPathway(p Posting) bool {
+	text := p.Title + " \n " + p.Org + " \n " + p.Snippet
+	if !atTopicRe.MatchString(text) {
+		return false
+	}
+	if atNegRe.MatchString(p.Title) {
+		return false
+	}
+	return atRoleRe.MatchString(p.Title) || seniorRe.MatchString(p.Title) ||
+		// Title is bland but the snippet names a nature unit and a professional grade.
+		(atTopicRe.MatchString(p.Snippet) && atRoleRe.MatchString(p.Snippet) && !atNegRe.MatchString(p.Snippet))
+}
+
 // Match returns true when a posting plausibly is a senior park / protected-area
 // role or consultancy. Cheap, deterministic, tri-lingual. The LLM does the fine ranking.
 func Match(p Posting) bool {
+	if isAustrianAuthority(p) && matchAustrianPathway(p) {
+		return true
+	}
 	text := p.Title + " \n " + p.Org + " \n " + p.Snippet
 	if !topicRe.MatchString(text) {
 		return false

@@ -37,21 +37,25 @@ func MaxMonthUSD() float64 {
 
 const systemPrompt = `You rank job postings, tenders and consultancy calls for ONE specific person. Be strict.
 
-THE PERSON: former national park director, senior protected-area (PA) leader, fluent EN/DE/FR. Interested in EXACTLY two things:
+THE PERSON: former national park director, senior protected-area (PA) leader, fluent EN/DE/FR. Interested in EXACTLY three things:
   A) Leading a park: Director / CEO / general manager / park manager / warden-in-charge / Geschäftsführer / Nationalparkdirektor / directeur / conservateur of a national park, protected area, reserve, conservancy or PA agency. Also deputy director of a large park in Africa.
   B) High-level consultancy for park directors, PA agencies or ministries: PA management plans, PA governance / finance / institutional reform, PA system reviews & strategies, park business plans, mid-term reviews / evaluations of park PPPs (public-private / collaborative management partnerships, e.g. African Parks, Peace Parks, WCS, FZS, Noé, Wildlife Alliance mandates), evaluations of PA programmes, team leader or key expert (senior) in EU (NaturAfrica, DG INTPA), GIZ, KfW, AFD, UNDP, GEF, World Bank, IUCN tenders that are about parks / PAs. Anything issued by or about African Parks Network is high interest.
+  C) AUSTRIA "foot in the door": a substantive professional post inside the public authority that governs / co-funds an Austrian national park, as a strategic step towards directing that park. Austrian park directors are appointed by Land + BML; the people who get those jobs usually come from the Land's Naturschutz department or the ministry's Nationalpark section. Relevant authorities and the park they lead to:
+     Land OÖ (Abt. Naturschutz, Direktion Umwelt und Wasserwirtschaft) → NP Kalkalpen · Land Steiermark Abt. 13 Umwelt und Raumordnung / Referat Naturschutz → NP Gesäuse · Land NÖ Abt. Naturschutz (RU5) → NP Donau-Auen, NP Thayatal · Land Burgenland Abt. 4 Naturschutz → NP Neusiedler See · Land Salzburg Abt. 5 Natur- und Umweltschutz, Land Tirol Abt. Umweltschutz, Land Kärnten Abt. 8 Umwelt/Naturschutz → NP Hohe Tauern · Stadt Wien MA 22 Umweltschutz / MA 49 Forst → NP Donau-Auen, Biosphärenpark Wienerwald · BML Sektion Nationalparks/Naturschutz, Umweltbundesamt, Österreichische Bundesforste Naturraummanagement → all parks.
+     COUNTS as C (score 65-84): Referent/in, Amtssachverständige/r, Jurist/in, Fachexperte/in, Fachbereichs-/Projekt-/Gruppenleitung, Natura-2000 / Schutzgebiets- / Biodiversitäts-Beauftragte, wissenschaftlicher / höherer Dienst, A1/LD14+ posts in a Naturschutz-, Umwelt-, Forst-, Raumordnungs- or Nationalpark-related unit; Abteilungs-/Sektionsleitung of such a unit scores 85+.
+     Does NOT count (score 0-20): Reinigung, Praktikum/Ferialjob/Lehrling, Ranger, Saisonkraft, Sachbearbeiter/Sekretariat/Kanzlei, Techniker/Messtechnik/Labor, Straßen-/Bauhof, Ärzte, Pädagogen, Sozialarbeit, IT, Buchhaltung, Verkehr, Gesundheit, Kultur. Also 0-20 for professional posts in an Austrian authority whose unit has nothing to do with nature / land use (e.g. Grafik, Justiz, Finanz).
 Regions: Austria and Sub-Saharan Africa = top priority; global / EU-level = good. Other regions only for exceptional director or consultancy roles.
 
-NOT of interest (score 0-20): anything below director/senior level (officer, coordinator, specialist, ranger, researcher, M&E, comms, finance, HR, fundraising, tourism ops), generic conservation-NGO staff roles, species/research projects, fellowships, internships, tenders for goods/works/IT/supplies, car parks, urban parks, business/industrial parks, forestry harvesting, agriculture, climate/energy unrelated to PAs.
+NOT of interest (score 0-20) outside pathway C: anything below director/senior level (officer, coordinator, specialist, ranger, researcher, M&E, comms, finance, HR, fundraising, tourism ops), generic conservation-NGO staff roles, species/research projects, fellowships, internships, tenders for goods/works/IT/supplies, car parks, urban parks, business/industrial parks, forestry harvesting, agriculture, climate/energy unrelated to PAs.
 
 SCORING 0-100:
-  85-100: park director/CEO/manager (Austria, SSA, or global), or senior PA consultancy clearly for park authorities/ministries.
-  65-84: senior PA-management role or PA consultancy where seniority/PA-focus is likely but not explicit; head of conservation / landscape director in SSA.
-  35-64: senior conservation leadership only partly about PAs (e.g. country director of a conservation NGO), or PA tenders of unclear level.
+  85-100: park director/CEO/manager (Austria, SSA, or global), senior PA consultancy clearly for park authorities/ministries, or head of an Austrian Land/Bund nature-conservation unit.
+  65-84: senior PA-management role or PA consultancy where seniority/PA-focus is likely but not explicit; head of conservation / landscape director in SSA; Austrian pathway-C professional post in a nature-related unit.
+  35-64: senior conservation leadership only partly about PAs (e.g. country director of a conservation NGO), PA tenders of unclear level, or an Austrian authority professional post whose unit is adjacent (Forst, Wasserwirtschaft, Raumordnung, Regionalentwicklung) rather than Naturschutz itself.
   0-34: everything else.
 
 OUTPUT: a JSON array, one object per input id, no prose:
-[{"id":<int>,"score":<0-100>,"region":"austria|ssa|global|other","kind":"director|consultancy|senior|other","why":"<=12 words, English"}]`
+[{"id":<int>,"score":<0-100>,"region":"austria|ssa|global|other","kind":"director|consultancy|senior|pathway|other","why":"<=12 words, English; for pathway say which park it leads to"}]`
 
 type rankResult struct {
 	ID     int64  `json:"id"`

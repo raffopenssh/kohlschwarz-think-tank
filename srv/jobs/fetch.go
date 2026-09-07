@@ -71,9 +71,30 @@ func Fetch(ctx context.Context, s Source) ([]Posting, error) {
 		ps, err = fetchTED(ctx, s)
 	case "undp":
 		ps, err = fetchUNDP(ctx, s)
+	case "mci":
+		ps, err = fetchMCI(ctx, s)
+	case "ooe-api":
+		ps, err = fetchOOE(ctx, s)
+	case "erecruiter":
+		ps, err = fetchERecruiter(ctx, s)
+	case "bund-odata":
+		ps, err = fetchBundOData(ctx, s)
+	case "noe-rexx":
+		ps, err = fetchNOE(ctx, s)
+	case "softgarden":
+		ps, err = fetchSoftgarden(ctx, s)
+	case "ktn":
+		ps, err = fetchKTN(ctx, s)
+	case "onlyfy":
+		ps, err = fetchOnlyfy(ctx, s)
+	case "talentlink":
+		ps, err = fetchTalentLink(ctx, s)
+	case "tirol":
+		ps, err = fetchTirol(ctx, s)
 	default:
 		ps, err = fetchPage(ctx, s)
 	}
+	enrichAT(ctx, s, ps)
 	for i := range ps {
 		ps[i].Source = s.Name
 		if ps[i].Lang == "" {
@@ -447,6 +468,44 @@ func fetchPage(ctx context.Context, s Source) ([]Posting, error) {
 		}
 		seen[abs] = true
 		out = append(out, Posting{URL: abs, Title: text})
+	}
+	return out, nil
+}
+
+// MCI Direct Hire career portals (e.g. peaceparksjobs.mcidirecthire.com) render
+// the list client-side from GET /Vacancy/Vacancies. Each job-card carries the
+// title, posted date, location and a share link to /Vacancy/ViewDetails.
+var (
+	mciTitleRe = regexp.MustCompile(`job-title">\s*([^<]+)`)
+	mciDateRe  = regexp.MustCompile(`fa-calendar"></i>\s*(\d{4})/(\d{2})/(\d{2})`)
+	mciLocRe   = regexp.MustCompile(`fa-map-marker"></i>\s*([^<]+)`)
+	mciURLRe   = regexp.MustCompile(`(/Vacancy/ViewDetails\?parameters=[^"'&\s]+)`)
+)
+
+func fetchMCI(ctx context.Context, s Source) ([]Posting, error) {
+	base, err := url.Parse(s.URL)
+	if err != nil {
+		return nil, err
+	}
+	b, err := get(ctx, base.Scheme+"://"+base.Host+"/Vacancy/Vacancies?PageNumber=1&GroupID=0")
+	if err != nil {
+		return nil, err
+	}
+	var out []Posting
+	for _, c := range strings.Split(string(b), `class="card job-card"`)[1:] {
+		t := mciTitleRe.FindStringSubmatch(c)
+		u := mciURLRe.FindStringSubmatch(c)
+		if t == nil || u == nil {
+			continue
+		}
+		p := Posting{URL: base.Scheme + "://" + base.Host + html.UnescapeString(u[1]), Title: clean(t[1])}
+		if d := mciDateRe.FindStringSubmatch(c); d != nil {
+			p.Posted = d[1] + "-" + d[2] + "-" + d[3]
+		}
+		if l := mciLocRe.FindStringSubmatch(c); l != nil {
+			p.Location = clean(l[1])
+		}
+		out = append(out, p)
 	}
 	return out, nil
 }

@@ -175,7 +175,7 @@ var Sources = []Source{
 	{Name: "IUCN careers", Kind: "page", Region: "global", Lang: "en", URL: "https://iucn.org/careers"},
 	{Name: "IUCN procurement", Kind: "page", Region: "global", Lang: "en", URL: "https://www.iucn.org/resources/procurement-notices"},
 	{Name: "Frankfurt Zoological Society jobs", Kind: "page", Region: "global", Lang: "en", URL: "https://fzs.org/en/about-us/organization/jobs/"},
-	{Name: "Peace Parks Foundation careers", Kind: "page", Region: "ssa", Lang: "en", URL: "https://www.peaceparks.org/careers/"},
+	{Name: "Peace Parks Foundation careers", Kind: "mci", Region: "ssa", Lang: "en", URL: "https://peaceparksjobs.mcidirecthire.com/Vacancy"}, // peaceparks.org/careers now 302→home; portal is MCI Direct Hire (JS-rendered)
 	{Name: "African Wildlife Foundation careers", Kind: "page", Region: "ssa", Lang: "en", URL: "https://www.awf.org/careers"},
 	{Name: "WWF Österreich Jobs", Kind: "page", Region: "austria", Lang: "de", URL: "https://www.wwf.at/karriere-jobs/"},
 	{Name: "Nationalparks Austria", Kind: "page", Region: "austria", Lang: "de", URL: "https://www.nationalparksaustria.at/de/jobs"},
@@ -190,6 +190,25 @@ var Sources = []Source{
 	{Name: "NaturAfrica (EU, Central Africa)", Kind: "page", Region: "ssa", Lang: "fr", URL: "https://www.naturafrica.eu/"},
 	{Name: "karriere.at · Nationalpark", Kind: "page", Region: "austria", Lang: "de", URL: "https://www.karriere.at/jobs/nationalpark"},
 	{Name: "EEAS vacancies", Kind: "page", Region: "eu", Lang: "en", URL: "https://www.eeas.europa.eu/filter-page/vacancies_en"},
+
+	// --- Austria: Land / Bund / park authorities ("foot in the door" pathway) ---
+	// Every Bundesland runs a different ATS; see austria.go for the parsers.
+	{Name: "Land Oberösterreich · Stellen", Kind: "ooe-api", Region: "austria", Lang: "de", URL: "https://www.land-oberoesterreich.gv.at/525548.htm"},                            // → NP Kalkalpen
+	{Name: "Land Steiermark · Jobs", Kind: "erecruiter", Region: "austria", Lang: "de", URL: "https://jobs.stmk.gv.at/Jobs"},                                                     // Abt. 13 → NP Gesäuse
+	{Name: "Land Niederösterreich · Stellenangebote", Kind: "noe-rexx", Region: "austria", Lang: "de", URL: "https://bewerbungen.noel.gv.at/stellenangebote.html"},               // → Donau-Auen, Thayatal
+	{Name: "Land Burgenland · Stellen", Kind: "softgarden", Region: "austria", Lang: "de", URL: "https://burgenland.softgarden.io/de/vacancies"},                                 // → Neusiedler See
+	{Name: "Land Salzburg · Stellen", Kind: "onlyfy", Region: "austria", Lang: "de", URL: "https://land-salzburg.onlyfy.jobs/candidate/widget/cqtfn65i"},                         // → Hohe Tauern
+	{Name: "Land Tirol · Stellenangebote", Kind: "tirol", Region: "austria", Lang: "de", URL: "https://www.tirol.gv.at/buergerservice/karriereportal/aktuelle-stellenangebote/"}, // → Hohe Tauern
+	{Name: "Land Kärnten · Stellenausschreibungen", Kind: "ktn", Region: "austria", Lang: "de", URL: "https://www.ktn.gv.at/Service/Stellenausschreibungen"},                     // → Hohe Tauern (geo-blocked; via proxy)
+	{Name: "Land Vorarlberg · Stellenangebote", Kind: "erecruiter", Region: "austria", Lang: "de", URL: "https://stellenangebote.vorarlberg.at/Jobs"},
+	{Name: "Stadt Wien · Stellenangebote", Kind: "talentlink", Region: "austria", Lang: "de", URL: "https://jobs.wien.gv.at/stellenangebote/"},                                                           // MA 22 → Donau-Auen
+	{Name: "Bund Jobbörse · BML", Kind: "bund-odata", Region: "austria", Lang: "de", URL: "https://bund.jobboerse.gv.at/sap/opu/odata/sap/ZGW_EREC_JOBSUCHE_SRV/Jobs?$filter=Ressort%20eq%20%270042%27"}, // Nationalparks section
+	{Name: "Bund Jobbörse · Natur/Landwirtschaft/Technik", Kind: "bund-odata", Region: "austria", Lang: "de", URL: "https://bund.jobboerse.gv.at/sap/opu/odata/sap/ZGW_EREC_JOBSUCHE_SRV/Jobs?$filter=FunctionalArea%20eq%20%270037%27"},
+	{Name: "Österreichische Bundesforste · Karriere", Kind: "erecruiter", Region: "austria", Lang: "de", URL: "https://karriere.bundesforste.at/Jobs"}, // Naturraummanagement, NP-Betriebe
+	{Name: "Umweltbundesamt · Karriere", Kind: "page", Region: "austria", Lang: "de", URL: "https://www.umweltbundesamt.at/karriere"},
+	{Name: "Nationalpark Kalkalpen · Jobs", Kind: "page", Region: "austria", Lang: "de", URL: "https://www.kalkalpen.at/jobs-mitarbeit"},
+	{Name: "Nationalpark Gesäuse · Stellen", Kind: "page", Region: "austria", Lang: "de", URL: "https://nationalpark-gesaeuse.at/nationalpark-mitgestalten/stellenausschreibung/"},
+	{Name: "Nationalpark Hohe Tauern · Jobs", Kind: "page", Region: "austria", Lang: "de", URL: "https://hohetauern.at/de/jobs"},
 }
 
 func init() {
