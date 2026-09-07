@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Park leadership radar · admin</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/static/radar.css?v=9">
+<link rel="stylesheet" href="/static/radar.css?v=10">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -15,6 +15,8 @@
 <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
 <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
 <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61M2 2l20 20"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></symbol>
 <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
 <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
 <symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
@@ -34,7 +36,7 @@
 <form method="post" action="/admin/jobs/fetch"><button><svg class="i"><use href="#i-rss"/></svg>fetch now</button></form>
 <form method="post" action="/admin/jobs/email"><button><svg class="i"><use href="#i-mail"/></svg>email report</button></form>
 <a class="btn" href="/admin/jobs/report.txt">preview</a>
-{{if .ShowHidden}}<a class="btn" href="/admin/jobs"><svg class="i"><use href="#i-eye"/></svg>hide hidden</a>{{else}}<a class="btn" href="/admin/jobs?hidden=1"><svg class="i"><use href="#i-eyeoff"/></svg>show hidden</a>{{end}}
+{{if .ShowHidden}}<a class="btn" href="/admin/jobs"><svg class="i"><use href="#i-eye"/></svg>hide dismissed</a>{{else}}<a class="btn" href="/admin/jobs?hidden=1"><svg class="i"><use href="#i-trash"/></svg>show dismissed</a>{{end}}
 </div>
 <details><summary>LLM cost &amp; budget</summary><p class="meta">{{.CostLine}}<br>Budget cap {{.Budget}}/month · email threshold score ≥ {{.MinScore}}</p>
 <form method="post" action="/admin/jobs/voucher" onsubmit="return confirm('Credit this month\'s spend so budget usage shows $0?')"><button class="small">apply voucher · reset this month to $0</button></form></details>{{else}}<p class="tiny">read-only view · <a href="/admin/jobs/report.txt">weekly report preview</a></p>{{end}}
@@ -70,8 +72,9 @@
     <svg class="i chev"><use href="#i-chev"/></svg></summary>
     <div class="body">
       {{if $it}}<dl>{{range $it}}<div><dt>{{.Label}}</dt><dd>{{.Text}}</dd></div>{{end}}</dl>{{else if $ctx}}<p>{{$ctx}}</p>{{end}}
-      <div class="line meta"><svg class="i"><use href="#i-clock"/></svg><span>since <b>{{.Since}}</b> · last seen <b title="{{.LastSeen}} UTC">{{.SeenAgo}}</b> · via {{.Source}}{{if .Dupes}} · +{{.Dupes}} {{if eq .Dupes 1}}copy{{else}}copies{{end}} merged{{end}}</span></div>
-      {{if $.Owner}}<div class="actions"><form method="post" action="/admin/jobs/hide/{{.ID}}">{{if .Hidden}}<input type="hidden" name="unhide" value="1"><button class="ghost"><svg class="i"><use href="#i-eye"/></svg>unhide</button>{{else}}<button class="ghost"><svg class="i"><use href="#i-eyeoff"/></svg>hide</button>{{end}}</form></div>{{end}}
+      <div class="line meta"><svg class="i"><use href="#i-clock"/></svg><span>since <b>{{.Since}}</b> · last seen <b title="{{.LastSeen}} UTC">{{.SeenAgo}}</b> · via {{.Source}}{{if .Dupes}} · +{{.Dupes}} {{if eq .Dupes 1}}copy{{else}}copies{{end}} merged{{end}}</span>
+        {{if $.Owner}}<form class="dismiss" method="post" action="/admin/jobs/hide/{{.ID}}">{{if .Hidden}}<input type="hidden" name="unhide" value="1"><button class="ghost" title="Put this posting back on the list"><svg class="i"><use href="#i-undo"/></svg>restore to list</button>{{else}}<button class="ghost" title="Remove this posting from the list (not relevant). Find it again under “show dismissed”."><svg class="i"><use href="#i-trash"/></svg>not relevant</button>{{end}}</form>{{end}}
+      </div>
     </div>
   </details>
 </article>

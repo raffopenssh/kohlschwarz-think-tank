@@ -105,7 +105,9 @@ button.ghost:hover{color:var(--fg);background:var(--chip)}
 .brief dt{font-size:.66rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:.2em}
 .brief dd{margin:0;color:var(--fg);text-wrap:pretty}
 .brief .meta{border-top:1px solid var(--line);padding-top:.45rem;padding-bottom:.5rem;font-size:.82rem}
-.brief .actions{margin:0;padding-bottom:.5rem}
+.brief .meta{align-items:center;flex-wrap:wrap}.brief .meta>span{flex:1;min-width:0}
+.brief .dismiss{margin-left:auto}.brief .dismiss button{font-size:.8rem;padding:.25em .5em;min-height:32px;gap:.3em;color:var(--muted)}
+.brief .dismiss button:hover{color:var(--soon-fg,#b45309)}
 @supports (interpolate-size:allow-keywords){
   .brief{interpolate-size:allow-keywords}
   .brief::details-content{block-size:0;overflow:clip;transition:block-size .25s cubic-bezier(.2,.8,.2,1),content-visibility .25s allow-discrete}
