@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"regexp"
 	"context"
 	"database/sql"
 	"fmt"
@@ -51,6 +52,31 @@ func (r Row) LastSeenDate() string {
 
 // SeenAgo renders LastSeen relative to now.
 func (r Row) SeenAgo() string { return Ago(r.LastSeen) }
+
+var snippetPrefixRe = regexp.MustCompile(`^\[[^\]]{1,40}\]\s*`)
+
+// Context is the fetched description (department, duties) shown in the
+// details panel so the reader can judge the ranking; source tag, title echo
+// and boilerplate are stripped.
+func (r Row) Context() string {
+	s := snippetPrefixRe.ReplaceAllString(strings.TrimSpace(r.Snippet), "")
+	s = strings.TrimPrefix(s, r.Title)
+	s = strings.TrimLeft(s, " ·")
+	s = strings.TrimSpace(s)
+	if s == "" || s == r.Title {
+		return ""
+	}
+	const max = 600
+	if len(s) > max {
+		if i := strings.LastIndex(s[:max], " "); i > max/2 {
+			s = s[:i]
+		} else {
+			s = s[:max]
+		}
+		s += " …"
+	}
+	return s
+}
 
 // ScoreVal returns the score or -1.
 func (r Row) ScoreVal() int64 {

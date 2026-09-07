@@ -82,6 +82,7 @@ button.ghost:hover{color:var(--fg);background:var(--chip)}
 .line.why{color:var(--fg)}
 .line.el{color:var(--muted)}.line.sc{color:var(--faint);font-size:.82rem}
 .more{margin-top:.2rem}
+.ctx{margin:.3rem 0 .4rem;padding:.45rem .6rem;border-left:2px solid var(--line,#ddd);color:var(--dim,#555);font-size:.86rem;line-height:1.4}
 .actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.55rem}
 .actions form{display:flex;gap:.4rem;flex:1;min-width:0;align-items:center}
 .actions select,.actions input{font:inherit;font-size:.85rem;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.4em .55em;min-height:36px}

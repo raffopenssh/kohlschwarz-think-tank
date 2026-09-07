@@ -55,7 +55,7 @@ SCORING 0-100:
   0-34: everything else.
 
 OUTPUT: a JSON array, one object per input id, no prose:
-[{"id":<int>,"score":<0-100>,"region":"austria|ssa|global|other","kind":"director|consultancy|senior|pathway|other","why":"<=12 words, English; for pathway say which park it leads to"}]`
+[{"id":<int>,"score":<0-100>,"region":"austria|ssa|global|other","kind":"director|consultancy|senior|pathway|other","why":"English. Non-Austrian: <=12 words. Austrian authority postings (region austria, employer Land/Bund/Stadt Wien/ÖBf): <=25 words, MUST name the unit/department as given in the posting, the park it would lead to (or 'no park link'), and the verdict, e.g. 'Abt. Naturschutz RU5 → NP Donau-Auen; Referent-level legal post, solid entry'"}]`
 
 type rankResult struct {
 	ID     int64  `json:"id"`
@@ -131,7 +131,7 @@ func RankPending(ctx context.Context, db *sql.DB, maxItems int) Run {
 			}
 			_, err := db.ExecContext(ctx, `UPDATE job_postings SET score = ?, kind = ?, why = ?, scored_at = datetime('now'),
 				region = CASE WHEN ? IN ('austria','ssa','global','other') THEN ? ELSE region END WHERE id = ? AND score IS NULL`,
-				r.Score, r.Kind, truncate(r.Why, 120), r.Region, r.Region, r.ID)
+				r.Score, r.Kind, truncate(r.Why, 220), r.Region, r.Region, r.ID)
 			if err == nil {
 				run.Ranked++
 				scored[r.ID] = true
@@ -163,7 +163,7 @@ func rankBatch(ctx context.Context, rows []Row) ([]rankResult, int64, int64, err
 	var sb strings.Builder
 	for _, r := range rows {
 		fmt.Fprintf(&sb, "id=%d | %s | org: %s | loc: %s | posted: %s | deadline: %s | src: %s\n  %s\n",
-			r.ID, r.Title, r.Org, r.Location, r.Posted, r.Deadline, r.Source, truncate(r.Snippet, 350))
+			r.ID, r.Title, r.Org, r.Location, r.Posted, r.Deadline, r.Source, truncate(r.Snippet, 700))
 	}
 	content, nIn, nOut, err := chat(ctx, systemPrompt, sb.String(), 1500+400*len(rows))
 	if err != nil {

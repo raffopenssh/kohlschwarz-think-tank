@@ -47,7 +47,7 @@ var atOrgRe = regexp.MustCompile(`(?i)(amt der|landesregierung|land (ober|nieder
 var atTopicRe = regexp.MustCompile(`(?i)(naturschutz|nationalpark|schutzgebiet|natura\s*2000|biodiversit|umweltschutz|umwelt(recht|abteilung|- und)|naturraum|landschaft(sschutz|spflege|splanung)|ökolog|biolog|forst|wald|wildökolog|jagd|fischerei|gewässerökolog|wasserwirtschaft|raumordnung|regionalentwicklung|regionalpolitik|ländlicher raum|agrar|land- und forstwirtschaft|nachhaltigkeit|klimaschutz|artenschutz|moor|alm|weide|abteilung 13|abt\.\s*13|abteilung 8|anlagen- und naturschutz|natur- und geisteswissenschaft|natur/landwirtschaft/technik)`)
 
 // atRoleRe: substantive professional roles (title).
-var atRoleRe = regexp.MustCompile(`(?i)(referent|sachverständig|jurist|fachexpert|fachbereich|projektleit|projektmanag|abteilungsleit|gruppenleit|bereichsleit|stabsstellenleit|leitung|leiter|geschäftsführ|direktor|höheren\s+\w*dienst|wissenschaftlichen dienst|akademi|beauftragte|gebietsbetreu|schutzgebietsbetreu|schutzgebietsmanag|nationalparkmanag|natura\s*2000|koordinat|manager|managerin|planstelle|fachkraft mit akademischer|techniker\w* mit akademischer|mit akademischer ausbildung|\bA1\b|\bv1\b|LD\s*1[4-9]|absolvent\w* (der|eines) (universität|studium)|universitätsabsolvent|boku|hochschul)`)
+var atRoleRe = regexp.MustCompile(`(?i)(referent|sachverständig|jurist|fachexpert|fachbereich|projektleit|projektmanag|abteilungsleit|gruppenleit|bereichsleit|stabsstellenleit|leitung|leiter|geschäftsführ|direktor|höheren\s+\w*dienst|wissenschaftlichen dienst|akademische\w* referent|beauftragte|gebietsbetreu|schutzgebietsbetreu|schutzgebietsmanag|nationalparkmanag|natura\s*2000|koordinat|manager|managerin|planstelle|\bA1\b|\bv1\b|LD\s*1[4-9]|absolvent\w* (der|eines) (universität|studium)|universitätsabsolvent|boku|hochschul)`)
 
 // atNegRe: menial, junior, seasonal, clerical or unrelated titles.
 var atNegRe = regexp.MustCompile(`(?i)(reinigung|praktik|ferial|messtechnik|luftmess|laborant|ersatzkraft|karenzvertretung für die verwaltung|lehrling|lehrstelle|saison|ranger|sekretariat|kanzlei|assistenz|assistent|schreibkraft|straßenmeisterei|brückenmeisterei|bauhof|koch\b|köchin|küche|pflege|pädagog|kindergarten|kinderbetreu|ärzt|arzt|amtsärzt|schul|lehrer|kraftfahrer|hausmeister|hauswart|handwerk|facharbeiter|werkmeister|informatik|\bIT\b|it-|software|buchhalt|kassen|lohnverrechn|personalverrechn|controll|sozialarbeit|sozialbetreu|psycholog|therapeut|verkehr|straßenbau|hochbau|tiefbau|brücken|elektro|maschinen|kfz|führerschein|strafrecht|asyl|fremdenwesen|polizei|justiz|militär|bundesheer|zoll|finanz|steuer|gesundheit|krankenanstalt|klinik|veterinär|tierärzt|lebensmittel|marktamt|statistik|dolmetsch|übersetz|redakteur|kommunikation|presse|marketing|tourismus|kultur|museum|archiv|bibliothek|sport|jugend|familie|wohnbau|energie(recht|technik)?\b|strahlenschutz|luftfahrt|geolog|meteorolog|chemiker|labor|vermessung|gis\b|reinigungs|objektbetreu|sicherheitsdienst|portier|servicemitarbeit|gastro)`)
@@ -67,9 +67,10 @@ func matchAustrianPathway(p Posting) bool {
 	if atNegRe.MatchString(p.Title) {
 		return false
 	}
-	return atRoleRe.MatchString(p.Title) || seniorRe.MatchString(p.Title) ||
-		// Title is bland but the snippet names a nature unit and a professional grade.
-		(atTopicRe.MatchString(p.Snippet) && atRoleRe.MatchString(p.Snippet) && !atNegRe.MatchString(p.Snippet))
+	// The title itself must name a substantive role; generic nav links such as
+	// "Nationalpark Akademie" or recruiting-pool ads ("Technikerinnen mit
+	// akademischer Ausbildung") are left to the strict matcher / ranker.
+	return atRoleRe.MatchString(p.Title) || seniorRe.MatchString(p.Title)
 }
 
 // Match returns true when a posting plausibly is a senior park / protected-area
