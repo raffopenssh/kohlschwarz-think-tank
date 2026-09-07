@@ -75,6 +75,15 @@ button.ghost:hover{color:var(--fg);background:var(--chip)}
 .tag.soon{background:var(--soon);color:var(--soon-fg);font-weight:600}
 .tag.past{text-decoration:line-through;color:var(--faint)}
 .tag.status{border:1px solid var(--line);background:transparent}
+.tag.sig{border:1px dashed var(--line);background:transparent;color:var(--chip-fg)}
+.tag.sig.hard{border-style:solid;border-color:var(--s40);color:var(--s40);font-weight:600}
+.tag.sig.closed,.tag.sig.gone{border-style:solid;color:var(--faint);text-decoration:line-through}
+.verdict{float:right;margin:.15rem 0 0 .5rem;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.15em .55em;border-radius:4px}
+.verdict.hard{background:var(--s40);color:#fff}
+.verdict.ended{background:var(--chip);color:var(--faint);border:1px solid var(--line)}
+.card.ended .title{color:var(--faint)}
+.hist{margin:.35rem 0 .2rem;padding:0 0 0 1rem;font-size:.8rem;color:var(--chip-fg);line-height:1.5}
+.hist li::marker{color:var(--s40)}
 .tag.status.applied{border-color:var(--s70);color:var(--s70)}.tag.status.won{background:var(--s90);color:#fff;border-color:var(--s90)}
 .line{color:var(--muted);font-size:.88rem;margin-top:.15rem;display:flex;gap:.45em;align-items:baseline}
 .line svg.i{position:relative;top:.1em;color:var(--faint)}

@@ -18,6 +18,8 @@
       case 'new':return d.new==='1';
       case 'top':return +d.score>=70;
       case 'deadline':return !!d.deadline;
+      case 'hard':return d.verdict==='hard to fill';
+      case 'live':return d.verdict!=='closed'&&d.verdict!=='gone';
       case 'open':return d.status==='open';
       case 'soon':return d.soon==='1'&&d.status!=='skip'&&d.status!=='rejected';
       case 'ssa':case 'at':case 'eu':return (d.region||d.track)===f;

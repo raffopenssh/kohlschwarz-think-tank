@@ -83,6 +83,7 @@ func (s *Server) HandleAdminJobs(w http.ResponseWriter, r *http.Request) {
 			unranked++
 		}
 	}
+	jobs.AttachEvents(ctx, s.DB, rows)
 	rows = jobs.Dedupe(rows)
 	cost := jobs.GetCost(ctx, s.DB)
 	lf := jobs.LastRun(ctx, s.DB, "fetch")
@@ -161,7 +162,9 @@ func (s *Server) HandleAdminJobsFetch(w http.ResponseWriter, r *http.Request) {
 		rk := jobs.RankPending(ctx, s.DB, 200)
 		jobs.Current.Switch("brief")
 		br := jobs.BriefPending(ctx, s.DB, 60)
-		msg := fmt.Sprintf("%d new, %d ranked, %d briefed", run.NewCount, rk.Ranked, br.Ranked)
+		jobs.Current.Switch("check")
+		ck := jobs.CheckPending(ctx, s.DB, 40)
+		msg := fmt.Sprintf("%d new, %d ranked, %d briefed, %d re-checked", run.NewCount, rk.Ranked, br.Ranked, ck.Found)
 		if run.SourcesErr > 0 {
 			msg += fmt.Sprintf(", %d sources failed", run.SourcesErr)
 		}

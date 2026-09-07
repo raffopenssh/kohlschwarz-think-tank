@@ -12,27 +12,34 @@ import (
 
 // Row is a stored posting.
 type Row struct {
-	ID         int64
-	retried    bool // rank: already requeued once after being dropped from a reply
-	URL        string
-	Source     string
-	Title      string
-	Org        string
-	Location   string
-	Snippet    string
-	Lang       string
-	Region     string
-	Kind       string
-	Posted     string
-	Deadline   string
-	FirstSeen  string
-	LastSeen   string
-	Score      *int64
-	Why        string
-	Brief      string
-	ReportedAt *string
-	Hidden     bool
-	Dupes      int // extra copies collapsed by Dedupe (not stored)
+	ID              int64
+	retried         bool // rank: already requeued once after being dropped from a reply
+	URL             string
+	Source          string
+	Title           string
+	Org             string
+	Location        string
+	Snippet         string
+	Lang            string
+	Region          string
+	Kind            string
+	Posted          string
+	Deadline        string
+	FirstSeen       string
+	LastSeen        string
+	Score           *int64
+	Why             string
+	Brief           string
+	ReportedAt      *string
+	Hidden          bool
+	Salary          string  // salary / grade text as scraped from the page ('' = unknown)
+	Applicants      *int64  // LinkedIn public applicant count, nil = unknown
+	CheckedAt       *string // last page re-check (signals.go)
+	ClosedAt        *string // page says closed / gone, nil = live
+	Reposted        bool    // source shows it re-advertised
+	Events          []Event // change history (loaded by AttachEvents)
+	latestFirstSeen string  // newest first_seen among merged copies (Dedupe)
+	Dupes           int     // extra copies collapsed by Dedupe (not stored)
 }
 
 // Since renders FirstSeen as a date.
@@ -99,40 +106,115 @@ func (r Row) IsNew() bool {
 	return err == nil && time.Since(t) < 8*24*time.Hour
 }
 
-const rowCols = `id, url, source, title, org, location, snippet, lang, region, kind, posted, deadline, first_seen, last_seen, score, why, brief, reported_at, hidden`
+const rowCols = `id, url, source, title, org, location, snippet, lang, region, kind, posted, deadline, first_seen, last_seen, score, why, brief, reported_at, hidden, salary, applicants, checked_at, closed_at, reposted`
 
 func scanRows(rows *sql.Rows) ([]Row, error) {
 	defer rows.Close()
 	var out []Row
 	for rows.Next() {
 		var r Row
-		var hidden int64
-		if err := rows.Scan(&r.ID, &r.URL, &r.Source, &r.Title, &r.Org, &r.Location, &r.Snippet, &r.Lang, &r.Region, &r.Kind, &r.Posted, &r.Deadline, &r.FirstSeen, &r.LastSeen, &r.Score, &r.Why, &r.Brief, &r.ReportedAt, &hidden); err != nil {
+		var hidden, reposted int64
+		if err := rows.Scan(&r.ID, &r.URL, &r.Source, &r.Title, &r.Org, &r.Location, &r.Snippet, &r.Lang, &r.Region, &r.Kind, &r.Posted, &r.Deadline, &r.FirstSeen, &r.LastSeen, &r.Score, &r.Why, &r.Brief, &r.ReportedAt, &hidden, &r.Salary, &r.Applicants, &r.CheckedAt, &r.ClosedAt, &reposted); err != nil {
 			return nil, err
 		}
 		r.Hidden = hidden == 1
+		r.Reposted = reposted == 1
 		out = append(out, r)
 	}
 	return out, rows.Err()
 }
 
 // Upsert inserts a posting or refreshes last_seen. Returns true if new.
+//
+// On refresh it also records hiring signals as job_events: a deadline that
+// moved (extended / shortened), a later posted date (re-advertised), a posting
+// that reappears after being gone from every source for 10+ days, and a
+// posting that was marked closed but is listed again (reopened).
 func Upsert(ctx context.Context, db *sql.DB, p Posting) (bool, error) {
-	res, err := db.ExecContext(ctx, `INSERT INTO job_postings (url, source, title, org, location, snippet, lang, region, posted, deadline)
-		VALUES (?,?,?,?,?,?,?,?,?,?)
-		ON CONFLICT(url) DO UPDATE SET last_seen = datetime('now'),
-			deadline = CASE WHEN excluded.deadline != '' THEN excluded.deadline ELSE job_postings.deadline END,
-			snippet = CASE WHEN length(excluded.snippet) > length(job_postings.snippet) THEN excluded.snippet ELSE job_postings.snippet END`,
-		p.URL, p.Source, p.Title, p.Org, p.Location, p.Snippet, p.Lang, p.Region, p.Posted, p.Deadline)
+	var id int64
+	var oldDeadline, oldPosted, lastSeen string
+	var closedAt *string
+	err := db.QueryRowContext(ctx, `SELECT id, deadline, posted, last_seen, closed_at FROM job_postings WHERE url = ?`, p.URL).Scan(&id, &oldDeadline, &oldPosted, &lastSeen, &closedAt)
+	if err == sql.ErrNoRows {
+		_, err = db.ExecContext(ctx, `INSERT INTO job_postings (url, source, title, org, location, snippet, lang, region, posted, deadline)
+			VALUES (?,?,?,?,?,?,?,?,?,?)`, p.URL, p.Source, p.Title, p.Org, p.Location, p.Snippet, p.Lang, p.Region, p.Posted, p.Deadline)
+		return err == nil, err
+	}
 	if err != nil {
 		return false, err
 	}
-	id, _ := res.LastInsertId()
-	var firstSeen, lastSeen string
-	if err := db.QueryRowContext(ctx, `SELECT first_seen, last_seen FROM job_postings WHERE url = ?`, p.URL).Scan(&firstSeen, &lastSeen); err != nil {
-		return false, err
+	// Signals from the listing itself (free, no page fetch).
+	if p.Deadline != "" && oldDeadline != "" && p.Deadline != oldDeadline {
+		kind := "deadline_extended"
+		if p.Deadline < oldDeadline {
+			kind = "deadline_shortened"
+		}
+		AddEvent(ctx, db, id, kind, oldDeadline, p.Deadline)
 	}
-	return id > 0 && firstSeen == lastSeen, nil
+	if p.Posted != "" && oldPosted != "" && p.Posted > oldPosted {
+		AddEvent(ctx, db, id, "reposted", oldPosted, p.Posted)
+	}
+	if t, e := time.Parse("2006-01-02 15:04:05", lastSeen); e == nil && time.Since(t) > 10*24*time.Hour {
+		AddEvent(ctx, db, id, "reappeared", lastSeen[:10], time.Now().UTC().Format("2006-01-02"))
+	}
+	if closedAt != nil {
+		AddEvent(ctx, db, id, "reopened", (*closedAt)[:10], "")
+	}
+	_, err = db.ExecContext(ctx, `UPDATE job_postings SET last_seen = datetime('now'), closed_at = NULL,
+			deadline = CASE WHEN ? != '' THEN ? ELSE deadline END,
+			posted = CASE WHEN ? > posted THEN ? ELSE posted END,
+			reposted = CASE WHEN ? > posted AND posted != '' THEN 1 ELSE reposted END,
+			snippet = CASE WHEN length(?) > length(snippet) THEN ? ELSE snippet END
+		WHERE id = ?`,
+		p.Deadline, p.Deadline, p.Posted, p.Posted, p.Posted, p.Snippet, p.Snippet, id)
+	return false, err
+}
+
+// Event is one recorded change on a posting.
+type Event struct {
+	At   string
+	Kind string
+	Old  string
+	New  string
+}
+
+// AddEvent appends a change record unless the identical event was already
+// recorded within the last day (fetch runs may see the same source twice).
+func AddEvent(ctx context.Context, db *sql.DB, postingID int64, kind, old, new string) {
+	var n int
+	db.QueryRowContext(ctx, `SELECT count(*) FROM job_events WHERE posting_id = ? AND kind = ? AND old = ? AND new = ? AND at > datetime('now','-1 day')`, postingID, kind, old, new).Scan(&n)
+	if n > 0 {
+		return
+	}
+	if _, err := db.ExecContext(ctx, `INSERT INTO job_events (posting_id, kind, old, new) VALUES (?,?,?,?)`, postingID, kind, old, new); err != nil {
+		slog.Warn("jobs event", "error", err)
+	}
+}
+
+// AttachEvents loads the change history for every row (one query).
+func AttachEvents(ctx context.Context, db *sql.DB, rows []Row) {
+	if len(rows) == 0 {
+		return
+	}
+	idx := map[int64]int{}
+	for i, r := range rows {
+		idx[r.ID] = i
+	}
+	q, err := db.QueryContext(ctx, `SELECT posting_id, at, kind, old, new FROM job_events ORDER BY at`)
+	if err != nil {
+		return
+	}
+	defer q.Close()
+	for q.Next() {
+		var pid int64
+		var e Event
+		if q.Scan(&pid, &e.At, &e.Kind, &e.Old, &e.New) != nil {
+			continue
+		}
+		if i, ok := idx[pid]; ok {
+			rows[i].Events = append(rows[i].Events, e)
+		}
+	}
 }
 
 // List returns postings ordered by score, newest first; unranked at the end.

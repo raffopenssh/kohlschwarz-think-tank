@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Park leadership radar · admin</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/static/radar.css?v=17">
+<link rel="stylesheet" href="/static/radar.css?v=18">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -21,6 +21,7 @@
 <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
 <symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
 <symbol id="i-rss" viewBox="0 0 24 24"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 22V4a1 1 0 0 1 1-1h12l-2 4 2 4H5"/></symbol>
 <symbol id="i-spin" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></symbol>
 </svg>
 
@@ -49,20 +50,25 @@
 <button data-f="ssa">africa</button>
 <button data-f="at">austria</button>
 <button data-f="deadline">has deadline</button>
+<button data-f="hard" title="Recruiter visibly hasn’t found anyone: deadline extended, re-advertised, overdue, thin field, pay raised">unfilled</button>
+<button data-f="live" title="Hide postings that closed or vanished from their sources">live only</button>
 <span class="count" id="count"></span>
 </div>
 <div class="list">
-{{range .Rows}}{{$sc := .ScoreVal}}
-<article class="card{{if .IsNew}} new{{end}}{{if .Hidden}} hidden-row{{end}}" data-new="{{if .IsNew}}1{{end}}" data-score="{{$sc}}" data-region="{{.Region}}" data-deadline="{{.Deadline}}">
+{{range .Rows}}{{$sc := .ScoreVal}}{{$hr := .HardReasons}}
+{{$v := .Verdict}}<article class="card{{if .IsNew}} new{{end}}{{if .Hidden}} hidden-row{{end}}{{if or (eq $v "closed") (eq $v "gone")}} ended{{end}}" data-new="{{if .IsNew}}1{{end}}" data-score="{{$sc}}" data-region="{{.Region}}" data-deadline="{{.Deadline}}" data-verdict="{{.Verdict}}">
   <span class="score {{if ge $sc 85}}s90{{else if ge $sc 65}}s70{{else if ge $sc 35}}s40{{else}}s0{{end}}">{{if lt $sc 0}}–{{else}}{{$sc}}{{end}}</span>
+  {{with .Verdict}}<span class="verdict {{if eq . "hard to fill"}}hard{{else}}ended{{end}}" title="{{$hr}}">{{.}}</span>{{end}}
   <a class="title" href="{{.URL}}" target="_blank" rel="noopener">{{.Title}}<svg class="i"><use href="#i-ext"/></svg></a>
   {{if or .Org .Location}}<div class="line"><svg class="i"><use href="#i-pin"/></svg><span>{{.Org}}{{if and .Org .Location}} · {{end}}{{.Location}}</span></div>{{end}}
   <div class="tags">
     {{if .IsNew}}<span class="tag soon">new</span>{{end}}
     {{if .Hidden}}<span class="tag status">hidden</span>{{end}}
     <span class="tag">{{.Region}}</span>{{if .Kind}}<span class="tag">{{.Kind}}</span>{{end}}{{if .Lang}}<span class="tag">{{.Lang}}</span>{{end}}
-    {{if .Deadline}}<span class="tag soon"><svg class="i"><use href="#i-cal"/></svg> {{.Deadline}}</span>{{end}}
+    {{if .Deadline}}<span class="tag soon{{if not .DeadlineIn}} past{{end}}"><svg class="i"><use href="#i-cal"/></svg> {{.Deadline}}{{with .DeadlineIn}} · {{.}}{{end}}</span>{{end}}
     {{if .ReportedAt}}<span class="tag"><svg class="i"><use href="#i-mail"/></svg> emailed</span>{{end}}
+    {{if .Salary}}<span class="tag" title="Pay/grade as stated on the page">{{.Salary}}</span>{{end}}
+    {{range .Signals}}<span class="tag sig {{.Key}}{{if .Hard}} hard{{end}}" title="{{.Title}}">{{if .Hard}}<svg class="i"><use href="#i-flag"/></svg> {{end}}{{.Label}}</span>{{end}}
   </div>
   {{if .Why}}<div class="line why"><svg class="i"><use href="#i-arrow"/></svg><span>{{.Why}}</span></div>{{end}}
 {{$hb := .HasBrief}}{{$it := .BriefItems}}{{$ctx := .Context}}
@@ -72,7 +78,8 @@
     <svg class="i chev"><use href="#i-chev"/></svg></summary>
     <div class="body">
       {{if $it}}<dl>{{range $it}}<div><dt>{{.Label}}</dt><dd>{{.Text}}</dd></div>{{end}}</dl>{{else if $ctx}}<p>{{$ctx}}</p>{{end}}
-      <div class="line meta"><svg class="i"><use href="#i-clock"/></svg><span>since <b>{{.Since}}</b> · last seen <b title="{{.LastSeen}} UTC">{{.SeenAgo}}</b> · via {{.Source}}{{if .Dupes}} · +{{.Dupes}} {{if eq .Dupes 1}}copy{{else}}copies{{end}} merged{{end}}</span>
+      {{if .Events}}<ul class="hist">{{range .Events}}<li>{{.Label}}</li>{{end}}</ul>{{end}}
+      <div class="line meta"><svg class="i"><use href="#i-clock"/></svg><span>since <b>{{.Since}}</b>{{if .Posted}} (posted {{.Posted}}){{end}}{{with .CheckedAt}} · page checked <b>{{slice . 0 10}}</b>{{end}} · last seen <b title="{{.LastSeen}} UTC">{{.SeenAgo}}</b> · via {{.Source}}{{if .Dupes}} · +{{.Dupes}} {{if eq .Dupes 1}}copy{{else}}copies{{end}} merged{{end}}</span>
         {{if $.Owner}}<form class="dismiss" method="post" action="/admin/jobs/hide/{{.ID}}">{{if .Hidden}}<input type="hidden" name="unhide" value="1"><button class="ghost" title="Put this posting back on the list"><svg class="i"><use href="#i-undo"/></svg>restore to list</button>{{else}}<button class="ghost" title="Remove this posting from the list (not relevant). Find it again under “show dismissed”."><svg class="i"><use href="#i-trash"/></svg>not relevant</button>{{end}}</form>{{end}}
       </div>
     </div>

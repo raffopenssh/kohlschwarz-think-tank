@@ -79,9 +79,27 @@ func Dedupe(rows []Row) []Row {
 
 func merge(dst *Row, src Row) {
 	dst.Dupes++
+	if dst.latestFirstSeen == "" {
+		dst.latestFirstSeen = dst.FirstSeen
+	}
+	if src.FirstSeen > dst.latestFirstSeen {
+		dst.latestFirstSeen = src.FirstSeen
+	}
 	if src.FirstSeen != "" && (dst.FirstSeen == "" || src.FirstSeen < dst.FirstSeen) {
 		dst.FirstSeen = src.FirstSeen
 	}
+	// Signals: the group is live if any copy is live; keep the richest data.
+	if src.ClosedAt == nil {
+		dst.ClosedAt = nil
+	}
+	if src.Applicants != nil && (dst.Applicants == nil || *src.Applicants > *dst.Applicants) {
+		dst.Applicants = src.Applicants
+	}
+	if dst.Salary == "" {
+		dst.Salary = src.Salary
+	}
+	dst.Reposted = dst.Reposted || src.Reposted
+	dst.Events = append(dst.Events, src.Events...)
 	if src.LastSeen > dst.LastSeen {
 		dst.LastSeen = src.LastSeen
 	}

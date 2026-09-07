@@ -43,6 +43,8 @@ const (
 func BuildReport(ctx context.Context, db *sql.DB, siteURL string) (string, []int64) {
 	freshAll, _ := Unreported(ctx, db, AlsoMin)
 	all, _ := List(ctx, db, false, 400)
+	AttachEvents(ctx, db, all)
+	AttachEvents(ctx, db, freshAll)
 	cost := GetCost(ctx, db)
 	lastFetch := LastRun(ctx, db, "fetch")
 
@@ -109,11 +111,62 @@ func BuildReport(ctx context.Context, db *sql.DB, siteURL string) (string, []int
 		b.WriteString(extra + "\n")
 	}
 
-	// Still open: reported earlier, deadline in future or still listed at source.
+	// Hiring signals: anything ranked whose recruiter is visibly struggling
+	// (deadline extended, re-advertised, overdue, thin field, pay raised) or
+	// that closed since the last report. Only rows with a change this week.
 	today := time.Now().Format("2006-01-02")
+	weekAgo := time.Now().UTC().Add(-7 * 24 * time.Hour).Format("2006-01-02 15:04:05")
+	deduped := Dedupe(all)
+	var struggling, closed []Row
+	for _, r := range deduped {
+		if r.ScoreVal() < AlsoMin {
+			continue
+		}
+		v := r.Verdict()
+		changed := false
+		for _, e := range r.Events {
+			if e.At >= weekAgo {
+				changed = true
+				break
+			}
+		}
+		switch {
+		case v == "hard to fill" && changed && len(struggling) < 8:
+			struggling = append(struggling, r)
+		case v == "closed" && changed && r.ScoreVal() >= ReportMinScore && len(closed) < 6:
+			closed = append(closed, r)
+		}
+	}
+	if len(struggling) > 0 {
+		fmt.Fprintf(&b, "STILL UNFILLED — RECRUITER SIGNALS (%d)\n%s\n", len(struggling), strings.Repeat("-", 60))
+		b.WriteString("Posts where the hiring side visibly has not found anyone yet.\n")
+		for _, r := range struggling {
+			fmt.Fprintf(&b, "  [%d] %s — %s%s\n", r.ScoreVal(), r.Title, orgLoc(r), dl(r))
+			var tags []string
+			for _, sg := range r.Signals() {
+				if sg.Hard || sg.Key == "long" || sg.Key == "fewapps" {
+					tags = append(tags, sg.Label)
+				}
+			}
+			if len(tags) > 0 {
+				fmt.Fprintf(&b, "       %s\n", strings.Join(tags, " · "))
+			}
+			fmt.Fprintf(&b, "       %s\n", r.URL)
+		}
+		b.WriteString("\n")
+	}
+	if len(closed) > 0 {
+		fmt.Fprintf(&b, "CLOSED THIS WEEK (%d)\n%s\n", len(closed), strings.Repeat("-", 60))
+		for _, r := range closed {
+			fmt.Fprintf(&b, "  · %s — %s (open %d days)\n", r.Title, orgLoc(r), r.AgeDays())
+		}
+		b.WriteString("\n")
+	}
+
+	// Still open: reported earlier, deadline in future or still listed at source.
 	var open []Row
-	for _, r := range Dedupe(all) {
-		if r.ReportedAt == nil || r.ScoreVal() < ReportMinScore || picked[DedupeKey(r)] {
+	for _, r := range deduped {
+		if r.ReportedAt == nil || r.ScoreVal() < ReportMinScore || picked[DedupeKey(r)] || r.ClosedAt != nil {
 			continue
 		}
 		if (r.Deadline != "" && r.Deadline >= today) || (r.Deadline == "" && recentlySeen(r)) {
@@ -191,6 +244,11 @@ func writePick(b *strings.Builder, n int, r Row) {
 	meta := []string{fmt.Sprintf("fit %d/100", r.ScoreVal()), strings.ToUpper(r.Region)}
 	if r.Kind != "" && r.Kind != "other" {
 		meta = append(meta, r.Kind)
+	}
+	for _, sg := range r.Signals() {
+		if sg.Hard {
+			meta = append(meta, "⚑ "+sg.Label)
+		}
 	}
 	if r.Deadline != "" {
 		meta = append(meta, "deadline "+r.Deadline)
@@ -296,7 +354,9 @@ func Scheduler(ctx context.Context, db *sql.DB, to, siteURL string) {
 		rk := RankPending(ctx, db, 200)
 		Current.Switch("brief")
 		br := BriefPending(ctx, db, 60)
-		Current.Finish(fmt.Sprintf("scheduled fetch: %d new · ranked %d · briefed %d", r.NewCount, rk.Ranked, br.Ranked))
+		Current.Switch("check")
+		ck := CheckPending(ctx, db, 40)
+		Current.Finish(fmt.Sprintf("scheduled fetch: %d new · ranked %d · briefed %d · re-checked %d", r.NewCount, rk.Ranked, br.Ranked, ck.Found))
 		if time.Now().UTC().Weekday() == time.Monday {
 			if Current.Start("email") {
 				if _, err := WeeklyReport(ctx, db, to, siteURL, false); err != nil {
